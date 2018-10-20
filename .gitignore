@@ -1,0 +1,5 @@
+run
+.vscode
+Server/*.o
+Sample
+Server/server
