@@ -75,17 +75,15 @@ void Server::start() {
         int message_owner;
         ss >> message_owner;
 
-        if (message_owner == 0) {
-            _(cout << "Push message to the leader queue: " << message_str << endl;)
+        if (message_owner == CLIENT_REQUEST) {
+            _(cout << "Push request message to the leader queue: " << message_str << endl;)
             leaderQue.push(message_str + " " + client_ip + " " + to_string(client_port));
-        } else if (message_owner == 1) {
+        } else if (message_owner == ACCEPTOR) {
             _(cout << "Push message to the acceptor queue: " << message_str << endl;)
             acceptorQue.push(message_str);
-        } else if (message_owner == 2) {
+        } else if (message_owner == LEARNER) {
             _(cout << "Push message to the learner queue: " << message_str << endl;)
             learnerQue.push(message_str);
         }
-
-        
     }
 }
