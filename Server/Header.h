@@ -5,6 +5,8 @@
 
 #include <deque>
 #include <vector>
+#include <utility>
+#include <map>
 #include <cassert>
 #include <cstring>
 #include <sstream>
