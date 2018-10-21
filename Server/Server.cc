@@ -3,7 +3,20 @@
 
 using namespace std;
 
-int Server::myPort = 0;
+int Server::myPort;
+int Server::sId;
+string Server::ip;
+
+mutex Server::innerMutex;
+int Server::viewNum;
+
+vector<LogEntry> Server::logs;
+TSQueue<string> Server::leaderQue;
+TSQueue<string> Server::acceptorQue;
+TSQueue<string> Server::learnerQue;
+
+vector<string> Server::hosts;
+vector<int> Server::ports;
 
 void Server::start() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -45,8 +58,34 @@ void Server::start() {
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
         // Read the port adn client ip
         string client_ip(inet_ntoa(cli_addr.sin_addr));
-        int port = server_addr.sin_port;
-        _(cout << "Receive request from " << client_ip << ":" << port << endl;)
+        int client_port = server_addr.sin_port;
+        _(cout << "Receive request from " << client_ip << ":" << to_string(client_port) << endl;)
+        
+        // Receive the size of the message
+        uint32_t size;
+        recv(client_fd, &size, sizeof(uint32_t), MSG_WAITALL);
+        size = ntohl(size);
 
+        // Receive the message
+        unique_ptr<char[]> message_char(new char[size]);
+        recv(client_fd, message_char.get(), size, MSG_WAITALL);
+        string message_str(message_char.get(), message_char.get() + size);
+        _(cout << "Receive message: " << message_str << endl;)
+        stringstream ss(message_str);
+        int message_owner;
+        ss >> message_owner;
+
+        if (message_owner == 0) {
+            _(cout << "Push message to the leader queue: " << message_str << endl;)
+            leaderQue.push(message_str + " " + client_ip + " " + to_string(client_port));
+        } else if (message_owner == 1) {
+            _(cout << "Push message to the acceptor queue: " << message_str << endl;)
+            acceptorQue.push(message_str);
+        } else if (message_owner == 2) {
+            _(cout << "Push message to the learner queue: " << message_str << endl;)
+            learnerQue.push(message_str);
+        }
+
+        
     }
 }
