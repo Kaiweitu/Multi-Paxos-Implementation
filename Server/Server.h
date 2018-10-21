@@ -10,23 +10,28 @@ struct LogEntry{
     bool applied;
 };
 
+
 template<class T>
 class TSQueue{
 private:
     mutex innerMutex;
     deque<T> innerDeque;
+    condition_variable cv;
 public:
     T pop() {
-        innerMutex.lock();
+        unique_lock<mutex> lck(innerMutex, defer_lock);
+        lck.lock();
+        while (innerDeque.empty()) cv.wait(lck);
         T ret = innerDeque.front();
         innerDeque.pop_front();
-        innerMutex.unlock();
+        lck.unlock();
         return ret;
     };
 
     void push(T value) {
         innerMutex.lock();
         innerDeque.push_back(value);
+        cv.notify_one();
         innerMutex.unlock();
     };
 };
@@ -51,6 +56,8 @@ private:
     Leader mLeader;
     Learner mLearner;
     Acceptor mAcceptor;
+
+
 public:
     Server(int _myPort, int _sId, string& _ip, vector<string>& _hosts, vector<int> _ports) {
         myPort = _myPort;

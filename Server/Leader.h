@@ -4,5 +4,8 @@
 using namespace std;
 
 class Leader {
+private:
 
+public:
+    
 };
