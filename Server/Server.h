@@ -5,6 +5,7 @@ using namespace std;
 
 struct LogEntry{
     string data;
+    int viewNum;
     bool choosen;
     bool accepted;
     bool applied;
