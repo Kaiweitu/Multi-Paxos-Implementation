@@ -14,8 +14,18 @@ TSQueue<string> Server::leaderQue;
 TSQueue<string> Server::acceptorQue;
 TSQueue<string> Server::learnerQue;
 
-vector<string> Server::hosts;
-vector<int> Server::ports;
+vector<struct sockaddr_in> Server::addrs;
+
+void Server::initAddrs(const vector<string>& _hosts, const vector<int>& _ports) {
+    for (size_t i = 0; i < _hosts.size(); ++ i) {
+        struct sockaddr_in servAddr;
+        memset(&servAddr, 0, sizeof(servAddr));
+        servAddr.sin_family = AF_INET;
+        servAddr.sin_port = htons(_ports[i]);
+        inet_pton(AF_INET, _hosts[i].c_str(), &servAddr.sin_addr);
+        addrs.push_back(servAddr);
+    }
+}
 
 void Server::start() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);

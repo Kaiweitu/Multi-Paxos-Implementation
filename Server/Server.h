@@ -52,8 +52,7 @@ private:
     static TSQueue<string> acceptorQue;
     static TSQueue<string> learnerQue;
 
-    static vector<string> hosts;
-    static vector<int> ports;
+    static vector<struct sockaddr_in> addrs;
 
     Leader mLeader;
     Learner mLearner;
@@ -62,14 +61,15 @@ private:
     friend class Leader;
     friend class Learner;
     friend class mAcceptor;
+
+    void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:
-    Server(int _myPort, int _sId, string& _ip, vector<string>& _hosts, vector<int> _ports) {
+    Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
         myPort = _myPort;
         sId = sId;
         ip = _ip;
-        hosts = _hosts;
-        ports = _ports;
         logs.push_back(LogEntry());
+        initAddrs(_hosts, _ports);
     }
 
     void start();

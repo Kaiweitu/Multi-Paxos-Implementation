@@ -31,7 +31,7 @@ conclusion: we need maintain the view number for each time slot (the view we acc
 
 int Leader::findNextUnchosenLog(int curIndex) {
     unique_lock<mutex> iMutex(Server::innerMutex);
-    for (int i = curIndex; i < Server::logs.size(); ++ i)
+    for (size_t i = curIndex; i < Server::logs.size(); ++ i)
         if (!Server::logs[i].choosen) return i;
 
     Server::logs.push_back(LogEntry());
@@ -45,7 +45,6 @@ void Leader::handleCommand(const string& command, int& seq, int& cid, string& se
 
 bool Leader::prepare(int unchosenSlot) {
     return true;
-    // 
 }
 
 void Leader::propose() {
