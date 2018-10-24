@@ -4,11 +4,13 @@
 using namespace std;
 
 class Leader {
-private:
-    bool prepared;
+
 public:
-    Leader(): prepared(false) {
-    }
+    Leader(){
+    };
     void start();
-    void handleCommand();
+    int findNextUnchosenLog(int curIndex);
+    void handleCommand(const string& command, int& seq, int& cid, string& sentence);
+    bool prepare(int unchosenSlot);
+    void propose();
 };

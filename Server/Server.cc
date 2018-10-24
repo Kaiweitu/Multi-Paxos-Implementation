@@ -8,7 +8,6 @@ int Server::sId;
 string Server::ip;
 
 mutex Server::innerMutex;
-int Server::viewNum;
 
 vector<LogEntry> Server::logs;
 TSQueue<string> Server::leaderQue;

@@ -9,8 +9,10 @@ struct LogEntry{
     bool choosen;
     bool accepted;
     bool applied;
+    LogEntry(): data(""), viewNum(-1), choosen(false), accepted(false), applied(false) {
+        
+    }
 };
-
 
 template<class T>
 class TSQueue{
@@ -44,7 +46,6 @@ private:
     static string ip;
     
     static mutex innerMutex;
-    static int viewNum;
     static vector<LogEntry> logs;
     
     static TSQueue<string> leaderQue;
@@ -58,7 +59,9 @@ private:
     Learner mLearner;
     Acceptor mAcceptor;
 
-
+    friend class Leader;
+    friend class Learner;
+    friend class mAcceptor;
 public:
     Server(int _myPort, int _sId, string& _ip, vector<string>& _hosts, vector<int> _ports) {
         myPort = _myPort;
@@ -66,9 +69,9 @@ public:
         ip = _ip;
         hosts = _hosts;
         ports = _ports;
+        logs.push_back(LogEntry());
     }
 
     void start();
-
 
 };
