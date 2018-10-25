@@ -41,6 +41,7 @@ void Server::initAddrs(const vector<string>& _hosts, const vector<int>& _ports) 
 }
 
 void Server::start() {
+        
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;    
     struct timeval timeout;
@@ -74,6 +75,10 @@ void Server::start() {
         cerr << "ERROR　on listening" << endl;
         exit(1);
     }
+    
+    thread leader_t(Leader::start);
+    thread learner_t(Learner::start);
+    // thread acceptor_t(mAcceptor.start());
 
     while (1) {
         // accept message from the client
@@ -94,6 +99,7 @@ void Server::start() {
         recv(client_fd, message_char.get(), size, MSG_WAITALL);
         string message_str(message_char.get(), message_char.get() + size);
         _(dCout("Receive message: " + message_str);)
+        
         stringstream ss(message_str);
         int message_owner;
         ss >> message_owner;
@@ -102,13 +108,16 @@ void Server::start() {
 
         if (message_owner == CLIENT_REQUEST) {
             _(dCout("Push request message to the leader queue: " + message_str + '\n');)
-            leaderQue.push(msg + " " + to_string(client_ip) + " " + to_string(client_port));
+            leaderQue.push(msg + ":" + to_string(client_ip) + " " + to_string(client_port));
+            close(fd);
         } else if (message_owner == ACCEPTOR) {
+            // TODO: append file descriptor;
             _(dCout("Push message to the acceptor queue: " + message_str);)
             acceptorQue.push(msg);
         } else if (message_owner == LEARNER) {
             _(dCout("Push message to the learner queue: " + message_str);)
             learnerQue.push(msg);
+            close(fd);
         }
     }
 }

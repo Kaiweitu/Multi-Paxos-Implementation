@@ -52,15 +52,15 @@ private:
     // TODO: make consistent
     static void processReplyMessage(const PrepareReply& preReply, LeaderPrepareData* data);
     static void processProposeReplyMsg(LeaderProposeData* data, ProposeReply& pReply);
-    int calculateViewNum();
+    static int calculateViewNum();
     
     template <class MainClass, class ThreadClass>
-    void connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), ThreadClass* threadData, unique_lock<mutex>& lck);
+    static void connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), ThreadClass* threadData, unique_lock<mutex>& lck);
 public:
     Leader(){
     };
-    void start();
-    void handleCommand(const string& command, int& seq, int& cid, string& sentence);
-    bool prepare(int unchosenSlot, int curViewNum);
-    void propose(ProposeMsg& proposeMsg);
+    static void start();
+    static void handleCommand(const string& command, int& seq, int& cid, string& sentence);
+    static bool prepare(int unchosenSlot, int curViewNum);
+    static void propose(ProposeMsg& proposeMsg);
 };

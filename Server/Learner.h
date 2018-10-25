@@ -6,11 +6,11 @@ using namespace std;
 struct slotEntry {
     int client_ID;
     int seq;
-    int accept_seq;
+    int view_num;
     string command;
 
-    slotEntry() : client_ID(-1), seq(-1), accept_seq(-1){}
-    slotEntry(int _client_ID, int _seq, int _accept_seq) : client_ID(_client_ID), seq(_seq), accept_seq(_accept_seq){}
+    slotEntry() : client_ID(-1), seq(-1), view_num(-1){}
+    slotEntry(int _client_ID, int _seq, int _view_num) : client_ID(_client_ID), seq(_seq), view_num(_view_num){}
 };
 
 struct learner_data{
@@ -20,7 +20,7 @@ struct learner_data{
     vector<vector<slotEntry>> acceptor_vec;
     // 
     map<int, struct sockaddr_in> client_addrs;
-    map<pair<int, int>, string> command_map;
+    // map<pair<int, int>, string> command_map;
     vector<string> log;
 };
 
@@ -37,10 +37,10 @@ class Learner {
         static void applyMessage(learner_data &data);
         static void sendHbMessage();
         static bool checkChosen(int slot);
-        learner_data data;
+        static learner_data data;
         
     public:
         Learner();
-        void start();
+        static void start();
 
 };
