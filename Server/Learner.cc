@@ -4,6 +4,7 @@
 using namespace std;
 
 mutex Learner::innerMutex;
+learner_data Learner::data;
 Learner::Learner() {
     data.quorum = Server::addrs.size() / 2 + 1;
     data.acceptor_vec.resize(Server::addrs.size());
@@ -55,10 +56,10 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg &msg) {
 
     slotEntry &slot = data.acceptor_vec[msg.server_id][msg.slot];
     
-    if (slot.client_ID == -1 || slot.accept_seq < msg.accept_seq) {
+    if (slot.client_ID == -1 || slot.view_num < msg.view_num) {
         slot.client_ID = msg.client_ID;
         slot.seq = msg.seq;
-        slot.accept_seq = msg.accept_seq;
+        slot.view_num = msg.view_num;
         slot.command = msg.command;
     }
     // Check whether majority
