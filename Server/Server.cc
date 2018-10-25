@@ -5,16 +5,20 @@ using namespace std;
 
 int Server::myPort;
 int Server::sId;
+int Server::maxViewNum;
+
 string Server::ip;
 
 mutex Server::innerMutex;
-
 vector<LogEntry> Server::logs;
 TSQueue<string> Server::leaderQue;
 TSQueue<string> Server::acceptorQue;
 TSQueue<string> Server::learnerQue;
 
 vector<struct sockaddr_in> Server::addrs;
+
+mutex Server::addrsMutex;
+mutex Server::maxViewMutex;
 
 void Server::initAddrs(const vector<string>& _hosts, const vector<int>& _ports) {
     for (size_t i = 0; i < _hosts.size(); ++ i) {

@@ -22,21 +22,23 @@ private:
     condition_variable cv;
 public:
     T pop() {
-        unique_lock<mutex> lck(innerMutex, defer_lock);
-        lck.lock();
+        unique_lock<mutex> lck(innerMutex);
         while (innerDeque.empty()) cv.wait(lck);
         T ret = innerDeque.front();
         innerDeque.pop_front();
-        lck.unlock();
         return ret;
     };
 
     void push(T value) {
-        innerMutex.lock();
+        unique_lock<mutex> lck(innerMutex);
         innerDeque.push_back(value);
         cv.notify_one();
-        innerMutex.unlock();
     };
+
+    void makeEmpty() {
+        unique_lock<mutex> lck(innerMutex);
+        while (innerDeque.empty()) innerDeque.pop_front();
+    }   
 };
 
 class Server {
@@ -52,7 +54,11 @@ private:
     static TSQueue<string> acceptorQue;
     static TSQueue<string> learnerQue;
 
+    static mutex addrsMutex;
     static vector<struct sockaddr_in> addrs;
+
+    static mutex maxViewMutex;
+    static int maxViewNum;
 
     Leader mLeader;
     Learner mLearner;
@@ -65,6 +71,7 @@ private:
     void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:
     Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
+        viewNum = 0;
         myPort = _myPort;
         sId = sId;
         ip = _ip;
