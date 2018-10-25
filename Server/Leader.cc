@@ -143,7 +143,7 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     else  // can propose new value
         ret = true;
     
-
+    
 
     if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
         threadData->innerMutex.unlock();
@@ -158,6 +158,6 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
 
 
 void Leader::propose() {
-    
+
 }
 
