@@ -61,6 +61,13 @@ struct ProposeMsg {
     int seq;
     int CID;
     string command;
+    ProposeMsg () {
+
+    };
+    ProposeMsg (int _view, int _slot, unsigned long _userIP, int _port, int _seq, int _CID, const string& _command) :
+        view(_view), slot(_slot), userIP(_userIP), port(_port), seq(_seq), CID(_CID), command(_command) {
+
+    };
 
     void serialize (string& msg) {
         msg = to_string(ACCEPTOR) + " " + to_string(view) + " " + to_string(slot) + " " + to_string(userIP) + " " + to_string(port) 

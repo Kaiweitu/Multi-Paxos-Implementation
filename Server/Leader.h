@@ -10,6 +10,10 @@ struct LeaderPrepareThreadData {
     int curViewNum;
     int slot;
     int finishNum;
+    unsigned long userIP;
+    int port;
+    int seq;
+    int CID;
     bool chosen;
     mutex innerMutex;
     condition_variable cv;
@@ -44,7 +48,10 @@ private:
     static void proposeHelper(LeaderProposeData* data);
     static void prepareHelper(LeaderPrepareData* data); 
     static void makePrepareMessage(LeaderPrepareData* data, string& msg);
+
+    // TODO: make consistent
     static void processReplyMessage(const PrepareReply& preReply, LeaderPrepareData* data);
+    static void processProposeReplyMsg(LeaderProposeData* data, ProposeReply& pReply);
     int calculateViewNum();
     
     template <class MainClass, class ThreadClass>

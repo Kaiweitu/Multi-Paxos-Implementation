@@ -12,17 +12,20 @@ void Leader::start() {
         string command = Server::leaderQue.pop();
         
         try {
-            int seq, cid;
             string sentence;
-        
+            unsigned long userIP;
+            int port;
+            int seq, cid;
             int curViewNum = calculateViewNum();
+            
+            // get userIP port number here
             handleCommand(command, seq, cid, sentence);
         
+
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
                 curIndex = Server::findNextUnchosenLog(curIndex);
-            ProposeMsg proposeMsg;
-            //TODO: init;
+            ProposeMsg proposeMsg(curViewNum, curIndex, userIP, port, seq, cid, sentence);
             propose(proposeMsg);
         }
         catch (...) { // receive reject
@@ -69,6 +72,7 @@ void Leader::makePrepareMessage(LeaderPrepareData* data, string& msg) {
 }
 
 void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData* data) {
+
     if (preReply.AorR == 'R') {
         data->threadData->rejectNum += 1;
         data->threadData->cv.notify_one();
@@ -80,6 +84,10 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
         if (data->threadData->maxView < preReply.oldView) { 
             data->threadData->maxView = preReply.oldView;
             data->threadData->messageToPropose = preReply.oldCommand;
+            data->threadData->userIP = preReply.userIP;
+            data->threadData->port = preReply.port;
+            data->threadData->seq = preReply.seq;
+            data->threadData->CID = preReply.CID;
         }
     }
     else if (preReply.AorR == 'C') 
@@ -128,8 +136,10 @@ void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), Thre
 
     while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
         if (threadData->cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
-            threadData->finishNum += 1;
-            throw runtime_error("time out");
+            if (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+                threadData->finishNum += 1;
+                return;
+            }
         }
     }
 
@@ -159,8 +169,8 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     bool ret = false;
     if (threadData->chosen) ;
     else if (threadData->maxView != -1) {  // need to propose the old value
-        ProposeMsg proposeMsg;
-        //TODO: init
+        ProposeMsg proposeMsg(curViewNum, unchosenSlot, threadData->userIP, threadData->port, 
+            threadData->seq, threadData->CID, threadData->messageToPropose);
         propose(proposeMsg);
     }
     else  // can propose new value
@@ -179,12 +189,41 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     
 }
 
-void Leader::proposeHelper(LeaderProposeData* data) {
+void Leader::processProposeReplyMsg(LeaderProposeData* data, ProposeReply& pReply) {
+    if (pReply.AorR == 'R') {
+        data->threadData->rejectNum += 1;
+        data->threadData->cv.notify_one();
+        return;
+    } 
     
+    if (data->threadData->finishNum >= Server::addrs.size() / 2) {
+        data->threadData->cv.notify_one();
+    }
+}
+
+void Leader::proposeHelper(LeaderProposeData* data) {
+    string msg;
+    data->threadData->proposeMsg.serialize(msg);
+    sendAndRecvMessage(data->sockAddr, msg);
+
+    ProposeReply pReply; 
+    pReply.deserialize(msg);
+
+    data->threadData->innerMutex.lock();
+    processProposeReplyMsg(data, pReply);
+    
+    if (data->threadData->finishNum == Server::addrs.size()) {
+        data->threadData->innerMutex.unlock();
+        delete data->threadData;
+        delete data;
+        return;
+    }
+
+    data->threadData->innerMutex.unlock();
 }
 
 void Leader::propose(ProposeMsg& proposeMsg) {
-        // 1 stands for the main thread
+    // 1 stands for the main thread
     LeaderProposeThreadData* threadData = new LeaderProposeThreadData(proposeMsg);
     // send message to each server
     unique_lock<mutex> lck(threadData->innerMutex);
