@@ -158,6 +158,6 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
 
 
 void Leader::propose() {
-
+    
 }
 
