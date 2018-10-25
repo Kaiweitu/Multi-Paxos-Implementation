@@ -97,31 +97,31 @@ struct acceptMsg {
     unsigned long client_IP;
     string command;
 
-    static string serialize(acceptedMsg &msg) {
+    static string serialize(acceptMsg &msg) {
         ostringstream oss;
-        oss << slot << ' ' << client_IP << ' ' << port << ' ' << seq
-        << client_ID << ':' << command;
+        oss << msg.slot << ' ' << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
+        << msg.client_ID << ':' << msg.command;
         
         return oss.str();
     }
 
-    static acceptMsg deserialize(string &msg) {
+    static acceptMsg deserialize(string &msg_buf) {
         acceptMsg msg;
-        istringstream iss(msg);
+        istringstream iss(msg_buf);
         
-        int index = msg.find_first_of(':');
-        string cmd(msg.begin() + index + 1, msg.end());
+        int index = msg_buf.find_first_of(':');
+        string cmd(msg_buf.begin() + index + 1, msg_buf.end());
         msg.command = std::move(cmd);
         iss >> msg.slot >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
 
         return std::move(msg);
     }
-}
+};
 
 struct learnerHeartBeatMsg {
     int first_unchosen_index;
     int server_id;
-}
+};
 
 
 
