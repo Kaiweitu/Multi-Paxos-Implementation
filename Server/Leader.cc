@@ -3,6 +3,9 @@
 
 using namespace std;
 
+
+// Todo: one return no more accepted, no need to prepare for that value
+
 void Leader::start() {
     int curIndex = 0;
     while (true) {
@@ -78,9 +81,11 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
         }
     }
 
+    
     if (data->threadData->finishNum >= Server::addrs.size() / 2) {
         data->threadData->cv.notify_one();
     }
+    
 
 }
 
@@ -108,8 +113,37 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
     
 }
 
+template <class ThreadClass>
+template <class MainClass>
+void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass), ThreadClass* threadData) {
+    int majoritySize = Server::addrs.size() / 2 + 1;
+    for (auto& addr : Server::addrs) {
+        MainClass* newData = new MainClass(addr, threadData);
+        thread t(fun_ptr, newData);
+    }
+
+    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
+            threadData->finishNum += 1;
+            throw runtime_error("time out");
+        }
+    }
+
+    
+    // handle different situation
+    // if receive reject
+    threadData->finishNum += 1;
+    if (threadData->rejectNum) {
+        if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
+            threadData->innerMutex.unlock();
+            delete threadData;
+        }
+        throw runtime_error("receive reject");    
+    }
+
+}
+
 bool Leader::prepare(int unchosenSlot, int curViewNum) {
-    // Presonal believe it is thread safe
     // 1 stands for the main thread
     LeaderPrepareThreadData* threadData = new LeaderPrepareThreadData(unchosenSlot, curViewNum);
     // send message to each server
@@ -121,8 +155,12 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
         thread t(prepareHelper, newData);
     }
 
-    while (threadData->finishNum < majoritySize || !threadData->rejectNum )
-        threadData->cv.wait(lck);
+    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
+            threadData->finishNum += 1;
+            throw runtime_error("time out");
+        }
+    }
     
     
     // handle different situation
@@ -138,12 +176,13 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
 
     // if not
     bool ret = false;
-    if (threadData->maxView != -1)  // need to propose the old value
+    if (threadData->maxView != -1) {  // need to propose the old value
         propose();
+    }
     else  // can propose new value
         ret = true;
     
-    
+
 
     if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
         threadData->innerMutex.unlock();
@@ -152,12 +191,48 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     else 
         threadData->innerMutex.unlock();
         
-    return true;
+    return ret;
     
 }
 
 
-void Leader::propose() {
+void Leader::propose(ProposeMsg& proposeMsg) {
+        // 1 stands for the main thread
+    LeaderProposeThreadData* threadData = new LeaderProposeThreadData(proposeMsg);
+    // send message to each server
+    unique_lock<mutex> lck(threadData->innerMutex);
+    int majoritySize = Server::addrs.size() / 2 + 1;
+    for (auto& addr : Server::addrs) {
+        LeaderProposeData* newData = new LeaderProposeData(addr, threadData);
+        thread t(ProposeHelper, newData);
+    }
 
+    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
+            threadData->finishNum += 1;
+            throw runtime_error("time out");
+        }
+    }
+
+    
+    // handle different situation
+    // if receive reject
+    threadData->finishNum += 1;
+    if (threadData->rejectNum) {
+        if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
+            threadData->innerMutex.unlock();
+            delete threadData;
+        }
+        throw runtime_error("receive reject");    
+    }
+
+
+    if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
+        threadData->innerMutex.unlock();
+        delete threadData;
+    }
+    else 
+        threadData->innerMutex.unlock();
+    
 }
 
