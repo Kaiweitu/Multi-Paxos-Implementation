@@ -15,9 +15,9 @@ void Leader::start() {
             int curViewNum = calculateViewNum();
             handleCommand(command, seq, cid, sentence);
         
-            curIndex = findNextUnchosenLog(curIndex);    
+            curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
-                curIndex = findNextUnchosenLog(curIndex);;
+                curIndex = Server::findNextUnchosenLog(curIndex);;
             propose();
         }
         catch (...) { // receive reject
@@ -46,14 +46,6 @@ conclusion: we need maintain the view number for each time slot (the view we acc
 */
 
 
-int Leader::findNextUnchosenLog(int curIndex) {
-    unique_lock<mutex> iMutex(Server::innerMutex);
-    for (size_t i = curIndex; i < Server::logs.size(); ++ i)
-        if (!Server::logs[i].choosen) return i;
-
-    Server::logs.push_back(LogEntry());
-    return Server::logs.size() - 1;
-}
 
 void Leader::handleCommand(const string& command, int& seq, int& cid, string& sentence) {
     istringstream parser(command);

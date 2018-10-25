@@ -29,7 +29,6 @@ public:
     Leader(){
     };
     void start();
-    int findNextUnchosenLog(int curIndex);
     void handleCommand(const string& command, int& seq, int& cid, string& sentence);
     bool prepare(int unchosenSlot, int curViewNum);
     void propose();

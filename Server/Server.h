@@ -78,6 +78,8 @@ public:
         logs.push_back(LogEntry());
         initAddrs(_hosts, _ports);
     }
+    
+    static int findNextUnchosenLog(int curIndex);
 
     void start();
 

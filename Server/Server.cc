@@ -20,6 +20,16 @@ vector<struct sockaddr_in> Server::addrs;
 mutex Server::addrsMutex;
 mutex Server::maxViewMutex;
 
+int Server::findNextUnchosenLog(int curIndex) {
+    unique_lock<mutex> iMutex(Server::innerMutex);
+    for (size_t i = curIndex; i < Server::logs.size(); ++ i)
+        if (!Server::logs[i].choosen) return i;
+
+    Server::logs.push_back(LogEntry());
+    return Server::logs.size() - 1;
+}
+
+
 void Server::initAddrs(const vector<string>& _hosts, const vector<int>& _ports) {
     for (size_t i = 0; i < _hosts.size(); ++ i) {
         struct sockaddr_in servAddr;
