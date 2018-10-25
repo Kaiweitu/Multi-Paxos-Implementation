@@ -4,7 +4,6 @@
 using namespace std;
 
 struct learner_data{
-    mutex innerMutex;
     int next_apply = 0;
     int quorum = 0;
     map<int, map<pair<int, int>, int>> cmd_map;
@@ -15,17 +14,21 @@ struct learner_data{
 
 class Learner {
     private:
-        static learner_data data;
-
+        static mutex innerMutex;
         static const int ACCEPT_MESSAGE = 0;
         static const int HEARTBEAT_MESSAGE = 1;
-        
+        static const int SUCCESS_MESSAGE = 2;
+
+        static void handleAcceptMessage(learner_data &data, acceptMsg &msg);
+        static void handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg);
+        static void handleSuccessMessage(learner_data &data, successMsg &msg);
+        static void applyMessage(learner_data &data);
+        static void sendHbMessage();
+        static bool checkChosen(learner_data &data, int slot);
+        learner_data data;
         
     public:
         Learner();
         void start();
-        static void handleAcceptMessage(learner_data &data, acceptMsg &msg);
-        static void handleHbMessage(learnerHeartBeatMsg &msg);
-
 
 };

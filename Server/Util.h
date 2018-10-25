@@ -91,6 +91,7 @@ struct ProposeReply {
 
 void dCout(const string& msg);
 
+int sendMessage(struct sockaddr_in &addr, string &msg);
 void sendAndRecvMessage(struct sockaddr_in& addr, string& msg);
 
 long int getCurrentTime();
@@ -128,6 +129,50 @@ struct acceptMsg {
 struct learnerHeartBeatMsg {
     int first_unchosen_index;
     int server_id;
+
+    static string serialize(learnerHeartBeatMsg &msg) {
+        ostringstream oss;
+        oss << msg.first_unchosen_index << ' ' << msg.server_id;
+        return oss.str();
+    }
+
+    static learnerHeartBeatMsg deserialize(string &msg_buf) {
+        learnerHeartBeatMsg msg;
+        istringstream iss(msg_buf);
+
+        iss >> msg.first_unchosen_index >> msg.server_id;
+
+        return std::move(msg);
+    }
+};
+
+struct successMsg {
+    int slot;
+    int seq;
+    int client_ID;
+    int port;
+    // Network Byte Orders
+    unsigned long client_IP;
+    string command;
+
+    static string serialize(successMsg &msg) {
+        ostringstream oss;
+        oss << msg.slot << ' ' << msg.seq << ' ' << msg.client_ID << ' ' << msg.port << 
+            ' ' << msg.client_IP << ':' << msg.command;
+        return oss.str();
+    }
+
+    static successMsg deserialize(string &msg_buf) {
+        successMsg msg;
+        istringstream iss(msg_buf);
+        
+        int index = msg_buf.find_first_of(':');
+        string cmd(msg_buf.begin() + index + 1, msg_buf.end());
+        msg.command = std::move(cmd);
+
+        iss >> msg.slot >> msg.seq >> msg.client_ID >> msg.port >> msg.client_IP;
+        return std::move(msg);
+    }
 };
 
 
