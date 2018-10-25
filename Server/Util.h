@@ -31,18 +31,25 @@ struct PrepareReply {
     int slot;
     char AorR;
     char noMore;
+    unsigned long userIP;
+    int port;
+    int seq;
+    int CID;
     int oldView;
+    
     string oldCommand;
 
     void serialize (string& msg) {
-        msg = to_string(view) + " " + to_string(slot) + " " + AorR + " " + noMore + " " + to_string(oldView) + ":" + oldCommand;
+        msg = to_string(view) + " " + to_string(slot) + " " + AorR + " " + noMore + " " 
+            + to_string(userIP) + " " + to_string(port) + " " + to_string(seq) + " " + to_string(CID) + " " 
+            + to_string(oldView) + ";" + oldCommand;
     };
 
     void deserialize(const string& msg) {
         istringstream parser(msg);
-        parser >> view >> slot >> AorR >> noMore >> oldView;
-        oldCommand = msg.substr(msg.find(':') + 1, msg.size() - msg.find(':') - 1);
-    }
+        parser >> view >> slot >> AorR >> noMore >> userIP >> port >> seq >> CID >> oldView;
+        oldCommand = msg.substr(msg.find(';') + 1, msg.size() - msg.find(';') - 1);
+    };
 
 };
 
