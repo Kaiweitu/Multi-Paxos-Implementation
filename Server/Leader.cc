@@ -20,8 +20,10 @@ void Leader::start() {
         
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
-                curIndex = Server::findNextUnchosenLog(curIndex);;
-            propose();
+                curIndex = Server::findNextUnchosenLog(curIndex);
+            ProposeMsg proposeMsg;
+            //TODO: init;
+            propose(proposeMsg);
         }
         catch (...) { // receive reject
             Server::leaderQue.makeEmpty();
@@ -73,13 +75,16 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
         return;
     } 
 
-    if (preReply.AorR == 'C' || preReply.AorR == 'A') {
+    if (preReply.AorR == 'A') {
         // the acceptor slot is not empty;
         if (data->threadData->maxView < preReply.oldView) { 
             data->threadData->maxView = preReply.oldView;
             data->threadData->messageToPropose = preReply.oldCommand;
         }
     }
+    else if (preReply.AorR == 'C') 
+        data->threadData->chosen = true;
+    
 
     
     if (data->threadData->finishNum >= Server::addrs.size() / 2) {
@@ -113,9 +118,8 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
     
 }
 
-template <class ThreadClass>
-template <class MainClass>
-void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass), ThreadClass* threadData) {
+template <class MainClass, class ThreadClass>
+void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), ThreadClass* threadData, unique_lock<mutex>& lck) {
     int majoritySize = Server::addrs.size() / 2 + 1;
     for (auto& addr : Server::addrs) {
         MainClass* newData = new MainClass(addr, threadData);
@@ -123,7 +127,7 @@ void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass), Threa
     }
 
     while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
-        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
+        if (threadData->cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
             threadData->finishNum += 1;
             throw runtime_error("time out");
         }
@@ -149,35 +153,15 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     // send message to each server
     unique_lock<mutex> lck(threadData->innerMutex);
 
-    int majoritySize = Server::addrs.size() / 2 + 1;
-    for (auto& addr : Server::addrs) {
-        LeaderPrepareData* newData = new LeaderPrepareData(addr, threadData);
-        thread t(prepareHelper, newData);
-    }
-
-    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
-        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
-            threadData->finishNum += 1;
-            throw runtime_error("time out");
-        }
-    }
-    
-    
-    // handle different situation
-    // if receive reject
-    threadData->finishNum += 1;
-    if (threadData->rejectNum) {
-        if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
-            threadData->innerMutex.unlock();
-            delete threadData;
-        }
-        throw runtime_error("receive reject");    
-    }
+    connectAllAcceptersAndSendMessage<LeaderPrepareData, LeaderPrepareThreadData> (Leader::prepareHelper, threadData, lck);
 
     // if not
     bool ret = false;
-    if (threadData->maxView != -1) {  // need to propose the old value
-        propose();
+    if (threadData->chosen) ;
+    else if (threadData->maxView != -1) {  // need to propose the old value
+        ProposeMsg proposeMsg;
+        //TODO: init
+        propose(proposeMsg);
     }
     else  // can propose new value
         ret = true;
@@ -195,37 +179,17 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     
 }
 
+void Leader::proposeHelper(LeaderProposeData* data) {
+    
+}
 
 void Leader::propose(ProposeMsg& proposeMsg) {
         // 1 stands for the main thread
     LeaderProposeThreadData* threadData = new LeaderProposeThreadData(proposeMsg);
     // send message to each server
     unique_lock<mutex> lck(threadData->innerMutex);
-    int majoritySize = Server::addrs.size() / 2 + 1;
-    for (auto& addr : Server::addrs) {
-        LeaderProposeData* newData = new LeaderProposeData(addr, threadData);
-        thread t(ProposeHelper, newData);
-    }
 
-    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
-        if (cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
-            threadData->finishNum += 1;
-            throw runtime_error("time out");
-        }
-    }
-
-    
-    // handle different situation
-    // if receive reject
-    threadData->finishNum += 1;
-    if (threadData->rejectNum) {
-        if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
-            threadData->innerMutex.unlock();
-            delete threadData;
-        }
-        throw runtime_error("receive reject");    
-    }
-
+    connectAllAcceptersAndSendMessage<LeaderProposeData, LeaderProposeThreadData> (Leader::proposeHelper, threadData, lck);
 
     if (threadData->finishNum == Server::addrs.size() + 1) { // the last one
         threadData->innerMutex.unlock();
