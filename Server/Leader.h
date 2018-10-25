@@ -7,10 +7,13 @@ struct LeaderPrepareThreadData {
     string messageToPropose;
     int rejectNum;
     int maxView;
+    int curViewNum;
+    int slot;
     mutex innerMutex;
     condition_variable cv;
     int finishNum;
-    LeaderPrepareThreadData() : messageToPropose(""), rejectNum(0), maxView(-1), finishNum(0) {}
+    LeaderPrepareThreadData(int unchosenSlot, int _curViewNum) : 
+        messageToPropose("") ,rejectNum(0), maxView(-1), curViewNum(_curViewNum), slot(unchosenSlot), finishNum(0) {}
 };
 
 struct LeaderPrepareData{
@@ -23,7 +26,7 @@ class Leader {
 private:
     static void prepareHelper(LeaderPrepareData* data); 
     static void makePrepareMessage(LeaderPrepareData* data, string& msg);
-    static void processPrepareReplyMessage(const string& message, LeaderPrepareData* data);
+    static void processReplyMessage(const PrepareReply& preReply, LeaderPrepareData* data);
     int calculateViewNum();
 public:
     Leader(){

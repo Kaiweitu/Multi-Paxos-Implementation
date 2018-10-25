@@ -17,7 +17,6 @@ TSQueue<string> Server::learnerQue;
 
 vector<struct sockaddr_in> Server::addrs;
 
-mutex Server::addrsMutex;
 mutex Server::maxViewMutex;
 
 int Server::findNextUnchosenLog(int curIndex) {

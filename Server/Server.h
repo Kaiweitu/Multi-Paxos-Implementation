@@ -54,7 +54,6 @@ private:
     static TSQueue<string> acceptorQue;
     static TSQueue<string> learnerQue;
 
-    static mutex addrsMutex;
     static vector<struct sockaddr_in> addrs;
 
     static mutex maxViewMutex;

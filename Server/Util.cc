@@ -5,6 +5,8 @@ using namespace std;
 
 const int MAXBUFFERSIZE = 20;
 
+mutex cMutex;
+
 void sendAndRecvMessage(struct sockaddr_in& addr, string& msg) {
     char buffer[MAXBUFFERSIZE];
     int replySize;
@@ -17,3 +19,9 @@ void sendAndRecvMessage(struct sockaddr_in& addr, string& msg) {
     recv(sock, buffer, replySize, MSG_WAITALL);
     msg.assign(buffer, replySize); 
 }
+
+void dCout(const string& msg) {
+    cMutex.lock();
+    _(cout << msg << endl;)
+    cMutex.unlock();
+};
