@@ -18,7 +18,7 @@ void Leader::start() {
             int seq, cid;
             int curViewNum = calculateViewNum();
             
-            // get userIP port number here
+            //TODO: get userIP port number here
             handleCommand(command, seq, cid, sentence);
         
 
