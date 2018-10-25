@@ -6,6 +6,7 @@ using namespace std;
 mutex Learner::innerMutex;
 Learner::Learner() {
     data.quorum = Server::addrs.size() / 2 + 1;
+    data.acceptor_vec.resize(Server::addrs.size());
     _(dCout("[Learner] quorum is " + to_string(data.quorum));)
 }
 
@@ -32,41 +33,57 @@ void Learner::start() {
 void Learner::handleAcceptMessage(learner_data &data, acceptMsg &msg) {
     // Check whether chosen
     unique_lock<mutex> server_lock(Server::innerMutex);
-    if (Learner::checkChosen(data, msg.slot)) return;
-    unique_lock<mutex> lock(Learner::innerMutex);
-    struct sockaddr_in client_addr;
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_port = htons(msg.port);
-    client_addr.sin_addr.s_addr = msg.client_IP;
+    if (Learner::checkChosen(msg.slot)) return;
 
+    unique_lock<mutex> lock(Learner::innerMutex);
+    
+    // Add client_addrs into the map if not exist
     if (data.client_addrs.find(msg.client_ID) == data.client_addrs.end()) {
+        struct sockaddr_in client_addr;
+        client_addr.sin_family = AF_INET;
+        client_addr.sin_port = htons(msg.port);
+        client_addr.sin_addr.s_addr = msg.client_IP;
         data.client_addrs[msg.client_ID] = client_addr;
     }
 
+    // <client_ID, seq> uniquely identify the message
     pair<int, int> command_id = make_pair(msg.client_ID, msg.seq);
 
-    if (data.cmd_map.find(msg.slot) != data.cmd_map.end()) {
-        auto it = data.cmd_map[msg.slot].find(command_id);
-        if (it != data.cmd_map[msg.slot].end()) {
-            it -> second += 1;
-            if (it -> second >= data.quorum) {
-                string command = data.command_map[command_id];
-                _(dCout("[Leaner] Slot " + to_string(msg.slot) + " chose value: " + command);)
-                // Modify the logs data structure
-                Server::logs[msg.slot].data = command;
-                Server::logs[msg.slot].seq = msg.seq;
-                Server::logs[msg.slot].client_ID = msg.client_ID;
-                Server::logs[msg.slot].chosen = true;
-                Server::logs[msg.slot].accepted = true;
-                data.cmd_map.erase(msg.slot);
-                // Check whether we can apply the log
-                Learner::applyMessage(data);
+    if (msg.slot >= data.acceptor_vec[msg.server_id].size()) {
+        data.acceptor_vec[msg.server_id].resize(msg.slot + 1);
+    }
+
+    slotEntry &slot = data.acceptor_vec[msg.server_id][msg.slot];
+    
+    if (slot.client_ID == -1 || slot.accept_seq < msg.accept_seq) {
+        slot.client_ID = msg.client_ID;
+        slot.seq = msg.seq;
+        slot.accept_seq = msg.accept_seq;
+        slot.command = msg.command;
+    }
+    // Check whether majority
+    map<pair<int, int>, int> vote;
+    for (vector<slotEntry> &vec : data.acceptor_vec) {
+        if (msg.slot < vec.size() && vec[msg.slot].client_ID != -1) {
+            pair<int, int> msg_id = make_pair(vec[msg.slot].client_ID, vec[msg.slot].seq); 
+            auto it = vote.find(msg_id);
+            if (it == vote.end()) {
+                vote[msg_id] = 1;
+            } else {
+                it -> second += 1;
+                if (it -> second >= data.quorum) {
+                    _(dCout("[Leaner] Slot " + to_string(msg.slot) + " chose value: " + vec[msg.slot].command);)
+                    // Update the logs data structure
+                    Server::logs[msg.slot].data = vec[msg.slot].command;
+                    Server::logs[msg.slot].seq = msg.seq;
+                    Server::logs[msg.slot].client_ID = msg.client_ID;
+                    Server::logs[msg.slot].chosen = true;
+                    Server::logs[msg.slot].accepted = true;
+                    // Check whether we can apply the log
+                    Learner::applyMessage(data);
+                }
             }
-        } else {
-            data.cmd_map[msg.slot][command_id] = 1;
-        }
-    } else {
-        data.cmd_map[msg.slot][command_id] = 1;
+        } 
     }
 }
 
@@ -94,7 +111,7 @@ void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg) {
 
 void Learner::handleSuccessMessage(learner_data &data, successMsg &msg){
     unique_lock<mutex> server_lock(Server::innerMutex);
-    if (!Learner::checkChosen(data, msg.slot)) {
+    if (!Learner::checkChosen(msg.slot)) {
         unique_lock<mutex> lock(Learner::innerMutex);
         LogEntry &entry = Server::logs[msg.slot];
         entry.data = msg.command;
@@ -121,12 +138,13 @@ void Learner::handleSuccessMessage(learner_data &data, successMsg &msg){
     }
 }
 
-bool Learner::checkChosen(learner_data &data, int slot) {
+// Hold server lock
+bool Learner::checkChosen(int slot) {
     if ((size_t) slot >= Server::logs.size()) {
         Server::logs.resize(slot + 1);
-        return false;
     }
     else if (Server::logs[slot].chosen) return true;
+    return false;
 }
 
 void Learner::sendHbMessage() {
@@ -153,6 +171,7 @@ void Learner::applyMessage(learner_data &data) {
     while (data.next_apply < Server::logs.size() && Server::logs[data.next_apply].chosen) {
         Server::logs[data.next_apply].applied = true;
         data.log.push_back(Server::logs[data.next_apply].data);
+        _(dCout("[Learner] apply slot: " + to_string(data.next_apply) + " with value: " + Server::logs[data.next_apply].data);)
         string reply_msg = to_string(Server::logs[data.next_apply].seq) + ' ' + 
                             to_string(Server::logs[data.next_apply].client_ID);
         // server_lock.unlock();

@@ -105,6 +105,10 @@ long int getCurrentTime();
 
 struct acceptMsg {
     int slot;
+    // Server seq_ID
+    int server_id;
+    int accept_seq;
+    // client seq_ID
     int seq;
     int client_ID;
     int port;
@@ -114,7 +118,7 @@ struct acceptMsg {
 
     static string serialize(acceptMsg &msg) {
         ostringstream oss;
-        oss << msg.slot << ' ' << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
+        oss << msg.slot << ' ' << msg.server_id  << ' ' << msg.accept_seq << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
         << msg.client_ID << ':' << msg.command;
         
         return oss.str();
@@ -127,7 +131,7 @@ struct acceptMsg {
         int index = msg_buf.find_first_of(':');
         string cmd(msg_buf.begin() + index + 1, msg_buf.end());
         msg.command = std::move(cmd);
-        iss >> msg.slot >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
+        iss >> msg.slot >> msg.server_id >> msg.accept_seq >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
 
         return std::move(msg);
     }
