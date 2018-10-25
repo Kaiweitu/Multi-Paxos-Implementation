@@ -96,16 +96,18 @@ void Server::start() {
         stringstream ss(message_str);
         int message_owner;
         ss >> message_owner;
+        int index = message_str.find_first_of(' ');
+        string msg(message_str.begin() + index + 1, message_str.end());
 
         if (message_owner == CLIENT_REQUEST) {
             _(cout << "Push request message to the leader queue: " << message_str << endl;)
-            leaderQue.push(message_str + " " + client_ip + " " + to_string(client_port));
+            leaderQue.push(msg + " " + client_ip + " " + to_string(client_port));
         } else if (message_owner == ACCEPTOR) {
             _(cout << "Push message to the acceptor queue: " << message_str << endl;)
-            acceptorQue.push(message_str);
+            acceptorQue.push(msg);
         } else if (message_owner == LEARNER) {
             _(cout << "Push message to the learner queue: " << message_str << endl;)
-            learnerQue.push(message_str);
+            learnerQue.push(msg);
         }
     }
 }
