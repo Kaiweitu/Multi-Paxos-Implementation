@@ -71,7 +71,7 @@ private:
     void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:
     Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
-        viewNum = 0;
+        maxViewNum = 0;
         myPort = _myPort;
         sId = sId;
         ip = _ip;

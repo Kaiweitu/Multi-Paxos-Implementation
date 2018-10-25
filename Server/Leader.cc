@@ -21,7 +21,7 @@ void Leader::start() {
             propose();
         }
         catch (...) { // receive reject
-            leaderQue.makeEmpty();
+            Server::leaderQue.makeEmpty();
         }
     }
 }
@@ -66,6 +66,14 @@ A leader propose a different value on the slot that others has chosen a value.
 2. 
 */
 
+void Leader::makePrepareMessage(LeaderPrepareData* data, string& msg) {
+    // Todo
+}
+
+void Leader::processPrepareReplyMessage(const string& msg, LeaderPrepareData* data) {
+    // Todo
+}
+
 void Leader::prepareHelper(LeaderPrepareData* data) {
     string message = "";
     makePrepareMessage(data, message);
@@ -78,7 +86,7 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
 
 
 
-    if (data.finishNum == Server::addrs.size()) { // the last one
+    if (data->threadData->finishNum == Server::addrs.size()) { // the last one
         data->threadData->innerMutex.unlock();
         delete data->threadData;
         delete data;
@@ -86,7 +94,7 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
     }
 
 
-    data->threadData->inner_mutex.unlock();
+    data->threadData->innerMutex.unlock();
     delete data;
     
 }

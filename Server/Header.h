@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #include "Acceptor.h"
 #include "Leader.h"

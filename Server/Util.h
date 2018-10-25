@@ -4,5 +4,5 @@ using namespace std;
 
 
 
-int sendMessage(struct sockaddr_in& addr, string& msg);
+void sendAndRecvMessage(struct sockaddr_in& addr, string& msg);
 

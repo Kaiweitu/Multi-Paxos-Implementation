@@ -11,7 +11,7 @@ struct LeaderPrepareThreadData {
     condition_variable cv;
     int finishNum;
     LeaderPrepareThreadData() : messageToPropose(""), rejectNum(0), maxView(-1), finishNum(0) {}
-}
+};
 
 struct LeaderPrepareData{
     struct sockaddr_in sockAddr;
@@ -21,7 +21,10 @@ struct LeaderPrepareData{
 
 class Leader {
 private:
-    void prepareHelper(LeaderPrepareData* data) ;
+    static void prepareHelper(LeaderPrepareData* data); 
+    static void makePrepareMessage(LeaderPrepareData* data, string& msg);
+    static void processPrepareReplyMessage(const string& message, LeaderPrepareData* data);
+    int calculateViewNum();
 public:
     Leader(){
     };
