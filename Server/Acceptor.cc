@@ -45,7 +45,10 @@ void Acceptor::ProcessPrepareMsg() {
     recv(sock, buffer, replySize, MSG_WAITALL);
     string msg(buffer);
 
+    PrepareMsg prepareMsg; prepareMsg.deserialize(msg);
     
+    maxViewMutex
+
 }
 
 

@@ -20,6 +20,7 @@ void Leader::start() {
             
             //TODO: get userIP port number here
             handleCommand(command, seq, cid, sentence);
+            // 
         
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
