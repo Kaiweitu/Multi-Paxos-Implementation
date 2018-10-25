@@ -9,6 +9,7 @@
 #include <map>
 #include <cassert>
 #include <cstring>
+#include <chrono>
 #include <sstream>
 #include <iostream>
 #include <stdexcept>

@@ -10,11 +10,7 @@ mutex cMutex;
 void sendAndRecvMessage(struct sockaddr_in& addr, string& msg) {
     char buffer[MAXBUFFERSIZE];
     int replySize;
-    uint32_t sendSize = htonl(msg.size());
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    connect(sock, (struct sockaddr*)&addr, sizeof(addr));
-    send(sock, &sendSize , sizeof(int), 0);
-    send(sock, msg.c_str(), sizeof(msg.c_str()), 0);
+    int sock = sendMessage(addr, msg);
     recv(sock, &replySize, sizeof(int), MSG_WAITALL); replySize = ntohl(replySize);
     recv(sock, buffer, replySize, MSG_WAITALL);
     msg.assign(buffer, replySize); 
@@ -25,3 +21,12 @@ void dCout(const string& msg) {
     _(cout << msg << endl;)
     cMutex.unlock();
 };
+
+int sendMessage(struct sockaddr_in &addr, string &msg) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    uint32_t sendSize = htonl(msg.size());
+    send(sock, &sendSize , sizeof(int), 0);
+    send(sock, msg.c_str(), sizeof(msg.c_str()), 0);
+    return sock;
+}

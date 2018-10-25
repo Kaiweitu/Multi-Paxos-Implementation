@@ -5,11 +5,13 @@ using namespace std;
 
 struct LogEntry{
     string data;
+    int seq;
+    int client_ID;
     int viewNum;
-    bool choosen;
+    bool chosen;
     bool accepted;
     bool applied;
-    LogEntry(): data(""), viewNum(-1), choosen(false), accepted(false), applied(false) {
+    LogEntry(): data(""), viewNum(-1), chosen(false), accepted(false), applied(false) {
         
     }
 };

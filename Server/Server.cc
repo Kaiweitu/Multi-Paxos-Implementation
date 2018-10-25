@@ -22,7 +22,7 @@ mutex Server::maxViewMutex;
 int Server::findNextUnchosenLog(int curIndex) {
     unique_lock<mutex> iMutex(Server::innerMutex);
     for (size_t i = curIndex; i < Server::logs.size(); ++ i)
-        if (!Server::logs[i].choosen) return i;
+        if (!Server::logs[i].chosen) return i;
 
     Server::logs.push_back(LogEntry());
     return Server::logs.size() - 1;
