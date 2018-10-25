@@ -3,7 +3,7 @@
 
 using namespace std;
 
-const int MAXBUFFERSIZE = 20;
+const int MAXBUFFERSIZE = 200;
 
 mutex cMutex;
 
