@@ -3,10 +3,22 @@
 
 using namespace std;
 
+struct slotEntry {
+    int client_ID;
+    int seq;
+    int accept_seq;
+    string command;
+
+    slotEntry() : client_ID(-1), seq(-1), accept_seq(-1){}
+    slotEntry(int _client_ID, int _seq, int _accept_seq) : client_ID(_client_ID), seq(_seq), accept_seq(_accept_seq){}
+};
+
 struct learner_data{
     int next_apply = 0;
     int quorum = 0;
-    map<int, map<pair<int, int>, int>> cmd_map;
+    // Has problem here
+    vector<vector<slotEntry>> acceptor_vec;
+    // 
     map<int, struct sockaddr_in> client_addrs;
     map<pair<int, int>, string> command_map;
     vector<string> log;
@@ -24,7 +36,7 @@ class Learner {
         static void handleSuccessMessage(learner_data &data, successMsg &msg);
         static void applyMessage(learner_data &data);
         static void sendHbMessage();
-        static bool checkChosen(learner_data &data, int slot);
+        static bool checkChosen(int slot);
         learner_data data;
         
     public:
