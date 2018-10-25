@@ -79,7 +79,8 @@ void Server::start() {
         // accept message from the client
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
         // Read the port adn client ip
-        string client_ip(inet_ntoa(cli_addr.sin_addr));
+        // string client_ip(inet_ntoa(cli_addr.sin_addr));
+        
         int client_port = server_addr.sin_port;
         _(cout << "Receive request from " << client_ip << ":" << to_string(client_port) << endl;)
         
@@ -92,7 +93,7 @@ void Server::start() {
         unique_ptr<char[]> message_char(new char[size]);
         recv(client_fd, message_char.get(), size, MSG_WAITALL);
         string message_str(message_char.get(), message_char.get() + size);
-        _(cout << "Receive message: " << message_str << endl;)
+        _(dcout("Receive message: " + message_str);)
         stringstream ss(message_str);
         int message_owner;
         ss >> message_owner;
@@ -100,13 +101,13 @@ void Server::start() {
         string msg(message_str.begin() + index + 1, message_str.end());
 
         if (message_owner == CLIENT_REQUEST) {
-            _(cout << "Push request message to the leader queue: " << message_str << endl;)
-            leaderQue.push(msg + " " + client_ip + " " + to_string(client_port));
+            _(dcout("Push request message to the leader queue: " + message_str + '\n');)
+            leaderQue.push(msg + " " + to_string(client_ip) + " " + to_string(client_port));
         } else if (message_owner == ACCEPTOR) {
-            _(cout << "Push message to the acceptor queue: " << message_str << endl;)
+            _(dcout("Push message to the acceptor queue: " + message_str);)
             acceptorQue.push(msg);
         } else if (message_owner == LEARNER) {
-            _(cout << "Push message to the learner queue: " << message_str << endl;)
+            _(dcout("Push message to the learner queue: " + message_str);)
             learnerQue.push(msg);
         }
     }
