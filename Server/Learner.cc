@@ -176,11 +176,20 @@ void Learner::sendHbMessage() {
 // Need to hold two lock
 void Learner::applyMessage(learner_data &data) {
     while (data.next_apply < Server::logs.size() && Server::logs[data.next_apply].chosen) {
-        Server::logs[data.next_apply].applied = true;
-        data.log.push_back(Server::logs[data.next_apply].data);
-        _(dCout("[Learner] apply slot: " + to_string(data.next_apply) + " with value: " + Server::logs[data.next_apply].data);)
-        string reply_msg = to_string(Server::logs[data.next_apply].seq) + ' ' + 
-                            to_string(Server::logs[data.next_apply].client_ID);
+        LogEntry &entry = Server::logs[data.next_apply]; 
+        auto it = data.client_last_apply.find(entry.client_ID);
+        if (it != data.client_last_apply.end() && it -> second == entry.seq) {
+            data.next_apply ++;
+            _(dCout("Client " + to_string(entry.client_ID) + " has duplicat message with seq: " + to_string(entry.seq)))
+            continue;
+        } else {
+            data.client_last_apply[entry.client_ID] = entry.seq;
+        }
+        entry.applied = true;
+        data.log.push_back(entry.data);
+        _(dCout("[Learner] apply slot: " + to_string(data.next_apply) + " with value: " + entry.data);)
+        string reply_msg = to_string(entry.seq) + ' ' + 
+                            to_string(entry.client_ID);
         // server_lock.unlock();
         // Send reponse to the client
         sendMessage(data.client_addrs[Server::logs[data.next_apply].client_ID], reply_msg);
