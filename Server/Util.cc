@@ -25,8 +25,12 @@ void dCout(const string& msg) {
 int sendMessage(struct sockaddr_in &addr, string &msg) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    sendMessageHelper(sock, msg);
+    return sock;
+}
+
+void sendMessageHelper(int sock, const string& msg) {
     uint32_t sendSize = htonl(msg.size());
     send(sock, &sendSize , sizeof(int), 0);
     send(sock, msg.c_str(), sizeof(msg.c_str()), 0);
-    return sock;
 }

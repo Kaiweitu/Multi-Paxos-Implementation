@@ -27,9 +27,6 @@ struct learner_data{
 class Learner {
     private:
         static mutex innerMutex;
-        static const int ACCEPT_MESSAGE = 0;
-        static const int HEARTBEAT_MESSAGE = 1;
-        static const int SUCCESS_MESSAGE = 2;
 
         static void handleAcceptMessage(learner_data &data, acceptMsg &msg);
         static void handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg);

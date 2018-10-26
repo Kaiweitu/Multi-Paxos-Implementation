@@ -7,6 +7,8 @@ struct LogEntry{
     string data;
     int seq;
     int client_ID;
+    uint32_t userIP;
+    int port;
     int viewNum;
     bool chosen;
     bool accepted;
@@ -67,7 +69,7 @@ private:
 
     friend class Leader;
     friend class Learner;
-    friend class mAcceptor;
+    friend class Acceptor;
 
     void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:

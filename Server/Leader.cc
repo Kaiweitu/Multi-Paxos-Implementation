@@ -13,15 +13,13 @@ void Leader::start() {
         
         try {
             string sentence;
-            unsigned long userIP;
+            uint32_t userIP;
             int port;
             int seq, cid;
             int curViewNum = calculateViewNum();
             
-            //TODO: get userIP port number here
-            handleCommand(command, seq, cid, sentence);
-            // 
-        
+            handleCommand(command, seq, cid, sentence, userIP, port);
+            
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
@@ -53,10 +51,13 @@ conclusion: we need maintain the view number for each time slot (the view we acc
 */
 
 
-
-void Leader::handleCommand(const string& command, int& seq, int& cid, string& sentence) {
+void Leader::handleCommand(const string& command, int& seq, int& cid, string& sentence, uint32_t& userIP, int& port) {
     istringstream parser(command);
-    parser >> seq >> cid >> sentence;
+    parser >> seq >> cid;
+    sentence = command.substr(command.rfind(':') + 1, command.size() - command.rfind(':') - 1);
+    istringstream anotherParser(sentence);
+    anotherParser >> userIP >> port;
+    sentence = command.substr(command.find(':') + 1, command.rfind(':') - 1 - command.find(':'));
 }
 /*
 can such a situation exist?
