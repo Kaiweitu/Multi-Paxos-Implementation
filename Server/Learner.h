@@ -20,6 +20,7 @@ struct learner_data{
     vector<vector<slotEntry>> acceptor_vec;
     // 
     map<int, struct sockaddr_in> client_addrs;
+    map<int, int> client_last_apply;
     // map<pair<int, int>, string> command_map;
     vector<string> log;
 };
