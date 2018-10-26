@@ -84,10 +84,10 @@ void Server::start() {
         // accept message from the client
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
         // Read the port adn client ip
-        // string client_ip(inet_ntoa(cli_addr.sin_addr));
-        unsigned int client_ip = cli_addr.sin_addr.s_addr;
+        string client_ip(inet_ntoa(cli_addr.sin_addr));
+        // unsigned int client_ip = cli_addr.sin_addr.s_addr;
         int client_port = server_addr.sin_port;
-        _(dCout("Receive request from " + to_string(client_ip) + ":" + to_string(client_port));)
+        _(dCout("Receive request from " + client_ip + ":" + to_string(client_port));)
         
         // Receive the size of the message
         uint32_t size;
@@ -108,12 +108,12 @@ void Server::start() {
 
         if (message_owner == CLIENT_REQUEST) {
             _(dCout("Push request message to the leader queue: " + message_str + '\n');)
-            leaderQue.push(msg + ":" + to_string(client_ip) + " " + to_string(client_port));
+            leaderQue.push(msg);
             close(fd);
         } else if (message_owner == ACCEPTOR) {
             // TODO: append file descriptor;
             _(dCout("Push message to the acceptor queue: " + message_str);)
-            acceptorQue.push(msg);
+            acceptorQue.push(msg + ';' + to_string(client_fd));
         } else if (message_owner == LEARNER) {
             _(dCout("Push message to the learner queue: " + message_str);)
             learnerQue.push(msg);
