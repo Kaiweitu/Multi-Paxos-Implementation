@@ -12,6 +12,8 @@ void Leader::start() {
         string command = Server::leaderQue.pop();
         
         try {
+            dCout("Leader : Get Request from Client");
+            dCout(command);
             string sentence;
             uint32_t userIP;
             int port;
@@ -19,15 +21,26 @@ void Leader::start() {
             int curViewNum = calculateViewNum();
             
             handleCommand(command, seq, cid, sentence, userIP, port);
-            
+            dCout("Leader: Sentence is");
+            dCout(sentence);
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
                 curIndex = Server::findNextUnchosenLog(curIndex);
+            
+            dCout("Leader: Start to propose msg");
             ProposeMsg proposeMsg(curViewNum, curIndex, userIP, port, seq, cid, sentence);
+            
+            _(
+                string temp;
+                proposeMsg.serialize(temp);
+                dCout(temp);   
+            )
+            
             propose(proposeMsg);
         }
         catch (...) { // receive reject
+            dCout("Leader: I'm not a leader any more.");
             Server::leaderQue.makeEmpty();
         }
     }
