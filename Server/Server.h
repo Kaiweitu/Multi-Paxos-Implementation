@@ -51,6 +51,8 @@ private:
     static int sId;
     static string ip;
     
+    static int skippedSlot;
+
     static mutex innerMutex;
     static vector<LogEntry> logs;
     

@@ -8,6 +8,8 @@ int Server::sId;
 int Server::maxViewNum;
 int Server::skippedSlot;
 
+int Server::skipedSlot;
+
 string Server::ip;
 
 mutex Server::innerMutex;

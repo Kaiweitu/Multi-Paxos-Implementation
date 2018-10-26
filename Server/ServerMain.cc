@@ -26,6 +26,7 @@ int main(int argc, char **argv) {
         hosts[id] = s_ip;
         ports[id] = port;
     }
+    
     Server server(ports[sId], sId,  hosts[sId],hosts, ports, skippedSlot);
     server.start();
 }
