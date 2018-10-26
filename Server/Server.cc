@@ -45,11 +45,11 @@ void Server::start() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;    
     struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+    // timeout.tv_sec = 10;
+    // timeout.tv_usec = 0;
 
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
+    // setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
     
     if (fd < 0) {
         cerr << "ERROR opening socket" << endl;
@@ -83,6 +83,7 @@ void Server::start() {
     while (1) {
         // accept message from the client
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
+        if (client_fd < 0) continue;
         // Read the port adn client ip
         string client_ip(inet_ntoa(cli_addr.sin_addr));
         // unsigned int client_ip = cli_addr.sin_addr.s_addr;
