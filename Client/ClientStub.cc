@@ -79,11 +79,11 @@ void ClientStub::receiveReply() {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;    
     struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
+    // timeout.tv_sec = 5;
+    // timeout.tv_usec = 0;
 
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
+//     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
     
     if (fd < 0) {
         cerr << "ERROR opening socket" << endl;
