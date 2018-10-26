@@ -10,7 +10,7 @@ struct LeaderPrepareThreadData {
     int curViewNum;
     int slot;
     int finishNum;
-    unsigned long userIP;
+    uint32_t userIP;
     int port;
     int seq;
     int CID;
@@ -60,7 +60,7 @@ public:
     Leader(){
     };
     static void start();
-    static void handleCommand(const string& command, int& seq, int& cid, string& sentence);
+    static void handleCommand(const string& command, int& seq, int& cid, string& sentence, uint32_t& userIP, int& port);
     static bool prepare(int unchosenSlot, int curViewNum);
     static void propose(ProposeMsg& proposeMsg);
 };

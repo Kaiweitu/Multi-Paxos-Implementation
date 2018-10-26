@@ -20,10 +20,10 @@ void Learner::start() {
         ss >> type;
         int index = message_str.find_first_of(' ');
         string msg_str(message_str.begin() + index + 1, message_str.end());
-        if (type == Learner::ACCEPT_MESSAGE) {
+        if (type == ACCEPT_MESSAGE) {
             acceptMsg msg = acceptMsg::deserialize(msg_str);
             std::thread t(handleAcceptMessage, std::ref(Learner::data), std::ref(msg));
-        } else if (type == Learner::HEARTBEAT_MESSAGE) {
+        } else if (type == HEARTBEAT_MESSAGE) {
             // TODO: Heartbeat Message;
             learnerHeartBeatMsg msg = learnerHeartBeatMsg::deserialize(msg_str);
             std::thread t(handleHbMessage, std::ref(Learner::data), std::ref(msg));
@@ -104,7 +104,7 @@ void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg) {
         msg_body.client_IP = data.client_addrs[msg_body.client_ID].sin_addr.s_addr;
         lock.unlock(); 
         ostringstream oss;
-        oss << LEARNER << ' ' << Learner::SUCCESS_MESSAGE << ' ' << successMsg::serialize(msg_body); 
+        oss << LEARNER << ' ' << SUCCESS_MESSAGE << ' ' << successMsg::serialize(msg_body); 
         string msg_str = oss.str();
         sendMessage(Server::addrs[msg.server_id], msg_str);
     }
@@ -157,7 +157,7 @@ void Learner::sendHbMessage() {
                 msg_body.server_id = Server::sId;
                 
                 ostringstream oss;
-                oss << LEARNER << ' ' << Learner::HEARTBEAT_MESSAGE << ' ' << learnerHeartBeatMsg::serialize(msg_body); 
+                oss << LEARNER << ' ' << HEARTBEAT_MESSAGE << ' ' << learnerHeartBeatMsg::serialize(msg_body); 
                 string msg = oss.str();
                 sendMessage(Server::addrs[idx], msg);
             }

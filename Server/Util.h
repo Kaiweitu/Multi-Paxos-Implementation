@@ -12,12 +12,16 @@ const int CLIENT_REQUEST = 3;
 const int MESSAGE_PREPARE = 0;
 const int MESSAGE_PREPOSE = 1;
 
+const int ACCEPT_MESSAGE = 0;
+const int HEARTBEAT_MESSAGE = 1;
+const int SUCCESS_MESSAGE = 2;
+
 struct PrepareMsg {
     int view;
     int slot;
     
     void serialize (string& msg) {
-        msg = to_string(ACCEPTOR) + " " + to_string(view) + " " + to_string(slot);
+        msg = to_string(ACCEPTOR) + " " + to_string(MESSAGE_PREPARE); + " " + to_string(view) + " " + to_string(slot);
     };
 
     void deserialize(const string& msg) {
@@ -27,20 +31,20 @@ struct PrepareMsg {
 };
 
 struct PrepareReply {
-    int view;
-    int slot;
+    int view = -1;
+    int slot = -1;
     char AorR;
     char noMore;
-    unsigned long userIP;
-    int port;
-    int seq;
-    int CID;
-    int oldView;
+    uint32_t userIP = 0;
+    int port = -1;
+    int seq = -1;
+    int CID = -1;
+    int oldView = -1;
     
     string oldCommand;
 
     void serialize (string& msg) {
-        msg = to_string(view) + " " + to_string(slot) + " " + AorR + " " + noMore + " " 
+        msg = to_string(view)  + " " + to_string(slot) + " " + AorR + " " + noMore + " " 
             + to_string(userIP) + " " + to_string(port) + " " + to_string(seq) + " " + to_string(CID) + " " 
             + to_string(oldView) + ";" + oldCommand;
     };
@@ -56,7 +60,7 @@ struct PrepareReply {
 struct ProposeMsg {
     int view;
     int slot;
-    unsigned long userIP;
+    uint32_t userIP;
     int port;
     int seq;
     int CID;
@@ -64,14 +68,14 @@ struct ProposeMsg {
     ProposeMsg () {
 
     };
-    ProposeMsg (int _view, int _slot, unsigned long _userIP, int _port, int _seq, int _CID, const string& _command) :
+    ProposeMsg (int _view, int _slot, uint32_t _userIP, int _port, int _seq, int _CID, const string& _command) :
         view(_view), slot(_slot), userIP(_userIP), port(_port), seq(_seq), CID(_CID), command(_command) {
 
     };
 
     void serialize (string& msg) {
-        msg = to_string(ACCEPTOR) + " " + to_string(view) + " " + to_string(slot) + " " + to_string(userIP) + " " + to_string(port) 
-            + " " + to_string(seq) + " " + to_string(CID) + ";" + command;
+        msg = to_string(ACCEPTOR) + " " + to_string(MESSAGE_PREPOSE) + " " + to_string(view) + " " + to_string(slot) 
+            + " " + to_string(userIP) + " " + to_string(port) + " " + to_string(seq) + " " + to_string(CID) + ";" + command;
     };
 
     void deserialize(const string& msg) {
@@ -113,13 +117,13 @@ struct acceptMsg {
     int port;
     int view_num;
     // Network Byte Orders
-    unsigned long client_IP;
+    uint32_t client_IP;
     string command;
 
     static string serialize(acceptMsg &msg) {
         ostringstream oss;
-        oss << msg.slot << ' ' << msg.server_id  << ' ' << msg.view_num << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
-        << msg.client_ID << ':' << msg.command;
+        oss << LEARNER << ' ' <<  ACCEPT_MESSAGE  <<  ' ' << msg.slot << ' ' << msg.server_id  << ' ' << msg.view_num << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
+        << ' ' << msg.client_ID << ':' << msg.command;
         
         return oss.str();
     }
@@ -163,7 +167,7 @@ struct successMsg {
     int client_ID;
     int port;
     // Network Byte Orders
-    unsigned long client_IP;
+    uint32_t client_IP;
     string command;
 
     static string serialize(successMsg &msg) {
@@ -185,6 +189,8 @@ struct successMsg {
         return std::move(msg);
     }
 };
+
+void sendMessageHelper(int sock, const string& msg);
 
 
 
