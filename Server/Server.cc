@@ -7,6 +7,8 @@ int Server::myPort;
 int Server::sId;
 int Server::maxViewNum;
 
+int Server::skipedSlot;
+
 string Server::ip;
 
 mutex Server::innerMutex;

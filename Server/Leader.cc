@@ -25,7 +25,7 @@ void Leader::start() {
             dCout(sentence);
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
-            while (!prepare(curIndex, curViewNum)) 
+            while (curIndex == Server::skipedSlot || !prepare(curIndex, curViewNum)) 
                 curIndex = Server::findNextUnchosenLog(curIndex);
             
             dCout("Leader: Start to propose msg");

@@ -51,6 +51,8 @@ private:
     static int sId;
     static string ip;
     
+    static int skippedSlot;
+
     static mutex innerMutex;
     static vector<LogEntry> logs;
     
@@ -73,13 +75,14 @@ private:
 
     void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:
-    Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
+    Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports, int _skippedSlot) {
         maxViewNum = 0;
         myPort = _myPort;
         sId = sId;
         ip = _ip;
         logs.push_back(LogEntry());
         initAddrs(_hosts, _ports);
+        skippedSlot = _skippedSlot;
     }
     
     static int findNextUnchosenLog(int curIndex);

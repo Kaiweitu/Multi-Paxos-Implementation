@@ -6,6 +6,7 @@ int main(int argc, char **argv) {
         exit(1);
     } 
     int sId = atoi(argv[1]);
+    int skipedSlot = atoi(argv[2]);
 
     const string config_file = "service.config";
     ifstream ifs;
@@ -26,6 +27,6 @@ int main(int argc, char **argv) {
         hosts[id] = s_ip;
         ports[id] = port;
     }
-    Server server(ports[sId], sId,  hosts[sId],hosts, ports);
+    Server server(ports[sId], sId,  hosts[sId],hosts, ports, skipedSlot);
     server.start();
 }
