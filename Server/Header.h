@@ -12,6 +12,7 @@
 #include <chrono>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <sys/types.h>
