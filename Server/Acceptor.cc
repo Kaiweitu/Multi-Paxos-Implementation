@@ -53,7 +53,7 @@ void Acceptor::acceptTheSlot(const ProposeMsg& proposeMsg) {
     Server::innerMutex.lock();
     
     while (Server::logs.size() <= proposeMsg.slot)
-        logs.emplace_back(LogEntry());
+        Server::logs.emplace_back(LogEntry());
 
     assert( !Server::logs[proposeMsg.slot].chosen || 
         (Server::logs[proposeMsg.slot].chosen && Server::logs[proposeMsg.slot].data == proposeMsg.command));
