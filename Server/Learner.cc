@@ -21,7 +21,6 @@ void Learner::start() {
         string msg_str(message_str.begin() + index + 1, message_str.end());
         if (type == ACCEPT_MESSAGE) {
             acceptMsg msg = acceptMsg::deserialize(msg_str);
-            _(dCout("Handle the accept message: " + acceptMsg::serialize(msg));)
             std::thread(handleAcceptMessage, std::ref(Learner::data), msg).detach();
         } else if (type == HEARTBEAT_MESSAGE) {
             // TODO: Heartbeat Message;
@@ -53,8 +52,8 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
     pair<int, int> command_id = make_pair(msg.client_ID, msg.seq);
 
     _(dCout("size: " + to_string(data.acceptor_vec.size()));)
-    if (msg.slot >= data.acceptor_vec[msg.server_id].size()) {
-        data.acceptor_vec[msg.server_id].resize(msg.slot + 1);
+    while (msg.slot >= data.acceptor_vec[msg.server_id].size()) {
+        data.acceptor_vec[msg.server_id].push_back(slotEntry());
     }
 
     slotEntry &slot = data.acceptor_vec[msg.server_id][msg.slot];
@@ -77,10 +76,11 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
                 vote[msg_id] = 1;
                 it = vote.find(msg_id);
             } else {
-                it -> second += 1;
+                it -> second += 1; 
             }
+            _(dCout("Current Vote: " + to_string(it -> second));)
             if (it -> second >= data.quorum) {
-                _(dCout("[Leaner] Slot " + to_string(msg.slot) + " chose value: " + vec[msg.slot].command);)
+                _(dCout("[Learner] Slot " + to_string(msg.slot) + " chose value: " + vec[msg.slot].command);)
                 // Update the logs data structure
                 Server::logs[msg.slot].data = vec[msg.slot].command;
                 Server::logs[msg.slot].seq = msg.seq;
@@ -89,6 +89,7 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
                 Server::logs[msg.slot].accepted = true;
                 // Check whether we can apply the log
                 Learner::applyMessage(data);
+                _(dCout("[Learner] log size equals to " + to_string(Server::logs.size()));)
             }
         } 
     }
@@ -147,10 +148,12 @@ void Learner::handleSuccessMessage(learner_data &data, successMsg msg){
 
 // Hold server lock
 bool Learner::checkChosen(int slot) {
-    if ((size_t) slot >= Server::logs.size()) {
-        Server::logs.resize(slot + 1);
+    while ((size_t) slot >= Server::logs.size()) {
+        Server::logs.push_back(LogEntry());
+        dCout("Learner: Extend the log entry " + to_string(Server::logs.size() - 1));
+        assert(!Server::logs.back().chosen);
     }
-    else if (Server::logs[slot].chosen) return true;
+    if (Server::logs[slot].chosen) return true;
     return false;
 }
 
@@ -178,9 +181,9 @@ void Learner::applyMessage(learner_data &data) {
     while (data.next_apply < Server::logs.size() && Server::logs[data.next_apply].chosen) {
         LogEntry &entry = Server::logs[data.next_apply]; 
         auto it = data.client_last_apply.find(entry.client_ID);
-        if (it != data.client_last_apply.end() && it -> second == entry.seq) {
+        if (it != data.client_last_apply.end() && it -> second >= entry.seq) {
             data.next_apply ++;
-            _(dCout("Client " + to_string(entry.client_ID) + " has duplicat message with seq: " + to_string(entry.seq)))
+            _(dCout("Client " + to_string(entry.client_ID) + " has duplicat message with seq: " + to_string(entry.seq));)
             continue;
         } else {
             data.client_last_apply[entry.client_ID] = entry.seq;

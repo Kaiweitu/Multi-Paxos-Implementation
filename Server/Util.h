@@ -139,7 +139,6 @@ struct acceptMsg {
      
         iss >> msg.slot >> msg.server_id >> msg.view_num >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
         msg.command = cmd;
-        cout << "Command is " << msg.command << endl;
         return std::move(msg);
     }
 };

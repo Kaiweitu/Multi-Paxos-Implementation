@@ -71,7 +71,7 @@ void Server::start() {
         exit(1);
     }
     
-    if (listen(fd, 5) < 0) {
+    if (listen(fd, SOMAXCONN) < 0) {
         cerr << "ERROR　on listening" << endl;
         exit(1);
     }

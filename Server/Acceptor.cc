@@ -51,9 +51,12 @@ void Acceptor::processPrepareMsg(const string& msg, int FD) {
 
 void Acceptor::acceptTheSlot(const ProposeMsg& proposeMsg) {
     Server::innerMutex.lock();
-    
-    while (Server::logs.size() <= proposeMsg.slot)
-        Server::logs.emplace_back(LogEntry());
+
+    while (Server::logs.size() <= proposeMsg.slot) {
+        Server::logs.push_back(LogEntry());
+        dCout("Acceptor: Extend the log entry " + to_string(Server::logs.size() - 1));
+        assert(!Server::logs.back().chosen);
+    }
 
     assert( !Server::logs[proposeMsg.slot].chosen || 
         (Server::logs[proposeMsg.slot].chosen && Server::logs[proposeMsg.slot].data == proposeMsg.command));
@@ -127,7 +130,14 @@ void Acceptor::replyRejectMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
 void Acceptor::replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
     PrepareReply prepareReply;
     Server::innerMutex.lock();
+    _(dCout("ACceptor: the follow slot is " + to_string(prepareMsg.slot));)
     
+    while (Server::logs.size() <= prepareMsg.slot) {
+        Server::logs.push_back(LogEntry());
+        dCout("Acceptor: Extend the log entry " + to_string(Server::logs.size() - 1));
+        assert(!Server::logs.back().chosen);
+    }
+
     if (Server::logs[prepareMsg.slot].chosen) {
         Server::innerMutex.unlock();
         prepareReply.AorR = 'C';
@@ -174,7 +184,6 @@ void Acceptor::start() {
         int FD = atoi(message.substr(message.rfind(';') + 1, message.size() - message.rfind(';') - 1).c_str());
         message = message.substr(0, message.rfind(';'));
         if (msgType == MESSAGE_PREPARE) {
-            cout << message << endl;
             processPrepareMsg(message, FD);
         }
         else if (msgType == MESSAGE_PREPOSE) {

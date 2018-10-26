@@ -12,8 +12,8 @@ void Leader::start() {
         string command = Server::leaderQue.pop();
         
         try {
-            dCout("Leader : Get Request from Client");
-            dCout(command);
+            _(dCout("Leader : Get Request from Client");)
+            _(dCout(command);)
             string sentence;
             uint32_t userIP;
             int port;
@@ -21,14 +21,12 @@ void Leader::start() {
             int curViewNum = calculateViewNum();
             
             handleCommand(command, seq, cid, sentence, userIP, port);
-            dCout("Leader: Sentence is");
-            dCout(sentence);
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (!prepare(curIndex, curViewNum)) 
                 curIndex = Server::findNextUnchosenLog(curIndex);
             
-            dCout("Leader: Start to propose msg");
+            _(dCout("Leader: Start to propose msg");)
             ProposeMsg proposeMsg(curViewNum, curIndex, userIP, port, seq, cid, sentence);
             
             _(
@@ -38,6 +36,8 @@ void Leader::start() {
             )
 
             propose(proposeMsg);
+            _(dCout("Leader: finish proposing msg");)
+            
         }
         catch (...) { // receive reject
             dCout("Leader: I'm not a leader any more.");
@@ -110,7 +110,7 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
     
 
     
-    if (data->threadData->finishNum >= Server::addrs.size() / 2) {
+    if (data->threadData->acceptNum >= Server::addrs.size() / 2) {
         data->threadData->cv.notify_one();
     }
     
@@ -123,20 +123,35 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
     
     sendAndRecvMessage(data->sockAddr, message);
     
+    if (message.empty()) { // connection failure
+        data->threadData->innerMutex.lock();
+        data->threadData->finishNum += 1;
+        
+        if (data->threadData->finishNum == Server::addrs.size() + 1) {
+            data->threadData->innerMutex.unlock();
+            delete data->threadData;
+            delete data;
+            return;
+        }
+
+        data->threadData->innerMutex.unlock();    
+        return;
+    }
+
     PrepareReply preReply;
     preReply.deserialize(message);
 
     data->threadData->innerMutex.lock();
     processReplyMessage(preReply, data);
     
-    if (data->threadData->finishNum == Server::addrs.size()) { // the last one
+    if (data->threadData->finishNum == Server::addrs.size() + 1) { // the last one
         data->threadData->innerMutex.unlock();
         delete data->threadData;
         delete data;
         return;
     }
 
-    data->threadData->finishNum += 1;
+    data->threadData->acceptNum += 1;
     data->threadData->innerMutex.unlock();
     delete data;
     
@@ -145,12 +160,6 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
 template <class MainClass, class ThreadClass>
 void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), ThreadClass* threadData, unique_lock<mutex>& lck) {
     int majoritySize = Server::addrs.size() / 2 + 1;
-    
-    
-    _(dCout( "finishNum:" + to_string(threadData->finishNum) );)
-    _(dCout( "rejectNum:" + to_string(threadData->rejectNum) );)
-    _(dCout( "majoritySize:" + to_string(majoritySize) );)
-
 
     for (auto& addr : Server::addrs) {
         _(dCout("Leader: create thread " + to_string(Server::addrs.size()) );)
@@ -159,10 +168,10 @@ void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), Thre
     }
 
     
-    while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+    while (threadData->acceptNum < majoritySize && !threadData->rejectNum) {
         
-        if (threadData->cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
-            if (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+        if (threadData->cv.wait_for(lck, TIMEOUTTIME * chrono::seconds(1)) == cv_status::timeout) {
+            if (threadData->acceptNum < majoritySize && !threadData->rejectNum) {
                 threadData->finishNum += 1;
                 _(dCout("Leader: time out!"));
                 return;
@@ -196,7 +205,9 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     _(dCout("Leader: collect majority results ");)
     // if not
     bool ret = false;
-    if (threadData->chosen) ;
+    if (threadData->chosen) {
+        _(dCout("Leader: the value has been chosen!");)
+    }
     else if (threadData->maxView != -1) {  // need to propose the old value
         ProposeMsg proposeMsg(curViewNum, unchosenSlot, threadData->userIP, threadData->port, 
             threadData->seq, threadData->CID, threadData->messageToPropose);
@@ -225,7 +236,7 @@ void Leader::processProposeReplyMsg(LeaderProposeData* data, ProposeReply& pRepl
         return;
     } 
     
-    if (data->threadData->finishNum >= Server::addrs.size() / 2) {
+    if (data->threadData->acceptNum >= Server::addrs.size() / 2) {
         data->threadData->cv.notify_one();
     }
 }
@@ -235,20 +246,36 @@ void Leader::proposeHelper(LeaderProposeData* data) {
     data->threadData->proposeMsg.serialize(msg);
     sendAndRecvMessage(data->sockAddr, msg);
     
+    if (msg.empty()) { // connection failure
+        data->threadData->innerMutex.lock();
+        data->threadData->finishNum += 1;
+        
+        if (data->threadData->finishNum == Server::addrs.size() + 1) {
+            data->threadData->innerMutex.unlock();
+            delete data->threadData;
+            delete data;
+            return;
+        }
+
+        data->threadData->innerMutex.unlock();    
+        return;
+    }
+
     ProposeReply pReply; 
     pReply.deserialize(msg);
 
     data->threadData->innerMutex.lock();
+    data->threadData->finishNum += 1;
     processProposeReplyMsg(data, pReply);
     
-    if (data->threadData->finishNum == Server::addrs.size()) {
+    if (data->threadData->finishNum == Server::addrs.size() + 1) {
         data->threadData->innerMutex.unlock();
         delete data->threadData;
         delete data;
         return;
     }
 
-    data->threadData->finishNum += 1;
+    data->threadData->acceptNum += 1;
     data->threadData->innerMutex.unlock();
 }
 

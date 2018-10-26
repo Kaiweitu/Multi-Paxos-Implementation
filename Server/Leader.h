@@ -10,6 +10,7 @@ struct LeaderPrepareThreadData {
     int curViewNum;
     int slot;
     int finishNum;
+    int acceptNum;
     uint32_t userIP;
     int port;
     int seq;
@@ -18,7 +19,8 @@ struct LeaderPrepareThreadData {
     mutex innerMutex;
     condition_variable cv;
     LeaderPrepareThreadData(int unchosenSlot, int _curViewNum) : 
-        messageToPropose("") ,rejectNum(0), maxView(-1), curViewNum(_curViewNum), slot(unchosenSlot), finishNum(0), chosen(false) 
+        messageToPropose("") ,rejectNum(0), maxView(-1), curViewNum(_curViewNum), slot(unchosenSlot), finishNum(0), 
+        acceptNum(0), chosen(false) 
         {}
 };
 
@@ -32,9 +34,10 @@ struct LeaderProposeThreadData {
     ProposeMsg& proposeMsg;
     int rejectNum;
     int finishNum;
+    int acceptNum;
     mutex innerMutex;
     condition_variable cv;
-    LeaderProposeThreadData(ProposeMsg& _proposeMsg) : proposeMsg(_proposeMsg), rejectNum(0), finishNum(0) {}
+    LeaderProposeThreadData(ProposeMsg& _proposeMsg) : proposeMsg(_proposeMsg), rejectNum(0), finishNum(0), acceptNum(0) {}
 };
 
 struct LeaderProposeData {

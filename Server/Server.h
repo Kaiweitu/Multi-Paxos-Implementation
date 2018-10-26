@@ -76,7 +76,7 @@ public:
     Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
         maxViewNum = 0;
         myPort = _myPort;
-        sId = sId;
+        sId = _sId;
         ip = _ip;
         logs.push_back(LogEntry());
         initAddrs(_hosts, _ports);

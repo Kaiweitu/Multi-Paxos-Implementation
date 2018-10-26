@@ -4,3 +4,5 @@ Server/*.o
 Sample
 Server/server
 *.config
+Server/*.txt
+Client/*.txt

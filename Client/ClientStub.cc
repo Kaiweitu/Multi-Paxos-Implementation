@@ -63,7 +63,7 @@ int ClientStub::sendMessage(const string &msg) {
         _(cout << "Send out the request:" << request << endl;)
         close(sock);
         while(!impl.reply) {
-            if (cv.wait_for(lock, chrono::seconds(TIMEOUT_SEC)) == cv_status::timeout) {
+            if (cv.wait_for(lock, TIMEOUT_SEC * chrono::seconds(1)) == cv_status::timeout) {
                 impl.current_sId = (impl.current_sId + 1) % impl.addrs.size();
                 _(cout << "Timeout: resend the message to " << impl.current_sId << endl;)
                 break;
@@ -133,5 +133,6 @@ void ClientStub::receiveReply() {
             impl.reply = true;
             cv.notify_one();
         }
+        //close(client_fd);
     }
 }
