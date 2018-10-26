@@ -23,7 +23,7 @@ void Leader::start() {
             handleCommand(command, seq, cid, sentence, userIP, port);
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
-            while (!prepare(curIndex, curViewNum)) 
+            while (curIndex == Server::skippedSlot || !prepare(curIndex, curViewNum)) 
                 curIndex = Server::findNextUnchosenLog(curIndex);
             
             _(dCout("Leader: Start to propose msg");)

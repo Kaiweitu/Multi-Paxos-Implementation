@@ -6,6 +6,7 @@ using namespace std;
 int Server::myPort;
 int Server::sId;
 int Server::maxViewNum;
+int Server::skippedSlot;
 
 string Server::ip;
 

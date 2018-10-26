@@ -2,11 +2,11 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
+    if (argc != 3) {
         exit(1);
     } 
     int sId = atoi(argv[1]);
-
+    int skippedSlot = atoi(argv[2]);
     const string config_file = "service.config";
     ifstream ifs;
     ifs.open(config_file);
@@ -26,6 +26,6 @@ int main(int argc, char **argv) {
         hosts[id] = s_ip;
         ports[id] = port;
     }
-    Server server(ports[sId], sId,  hosts[sId],hosts, ports);
+    Server server(ports[sId], sId,  hosts[sId],hosts, ports, skippedSlot);
     server.start();
 }

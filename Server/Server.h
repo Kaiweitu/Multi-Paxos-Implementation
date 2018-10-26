@@ -62,6 +62,7 @@ private:
 
     static mutex maxViewMutex;
     static int maxViewNum;
+    static int skippedSlot;
 
     Leader mLeader;
     Learner mLearner;
@@ -73,13 +74,14 @@ private:
 
     void initAddrs(const vector<string>& _hosts, const vector<int>& _ports);
 public:
-    Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports) {
+    Server(int _myPort, int _sId, string& _ip, const vector<string>& _hosts, const vector<int>& _ports, int _skippedSlot) {
         maxViewNum = 0;
         myPort = _myPort;
         sId = _sId;
         ip = _ip;
         logs.push_back(LogEntry());
         initAddrs(_hosts, _ports);
+        skippedSlot = _skippedSlot;
     }
     
     static int findNextUnchosenLog(int curIndex);

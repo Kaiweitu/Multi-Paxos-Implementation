@@ -11,6 +11,9 @@ void Learner::start() {
     data.quorum = Server::addrs.size() / 2 + 1;
     data.acceptor_vec.resize(Server::addrs.size());
     _(dCout("[Learner] quorum is " + to_string(data.quorum));)
+    _(dCout("[Learner] clean files");)
+    remove( ("data" + to_string(Server::sId) + ".txt").c_str() );
+
     while (1) {    
         string message_str = Server::learnerQue.pop();
         _(dCout("[Learner] Receive: " + message_str);)
@@ -190,6 +193,13 @@ void Learner::applyMessage(learner_data &data) {
         }
         entry.applied = true;
         data.log.push_back(entry.data);
+        
+        // append to file
+        fstream fs;
+        fs.open("data" + to_string(Server::sId) + ".txt", fstream::in | fstream::out | fstream::app);
+        fs << entry.data << endl;
+        fs.close();
+
         _(dCout("[Learner] apply slot: " + to_string(data.next_apply) + " with value: " + entry.data);)
         string reply_msg = to_string(entry.seq) + ' ' + 
                             to_string(entry.client_ID);
