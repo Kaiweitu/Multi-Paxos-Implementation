@@ -74,7 +74,8 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
             pair<int, int> msg_id = make_pair(vec[msg.slot].client_ID, vec[msg.slot].seq); 
             auto it = vote.find(msg_id);
             if (it == vote.end()) {
-                it -> second = 1;
+                vote[msg_id] = 1;
+                it = vote.find(msg_id);
             } else {
                 it -> second += 1;
             }

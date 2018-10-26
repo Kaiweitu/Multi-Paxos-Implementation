@@ -248,6 +248,7 @@ void Leader::proposeHelper(LeaderProposeData* data) {
         return;
     }
 
+    data->threadData->finishNum += 1;
     data->threadData->innerMutex.unlock();
 }
 
