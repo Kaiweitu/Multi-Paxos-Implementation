@@ -46,7 +46,7 @@ ClientStub::ClientStub(int _client_ID, int _port, const string &ip, const string
 
         impl.addrs[id] = serv_addr;
     }
-
+    thread(ClientStub::receiveReply).detach();
 }
 
 int ClientStub::sendMessage(const string &msg) {

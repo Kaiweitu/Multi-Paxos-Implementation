@@ -6,14 +6,14 @@ using namespace std;
 class Acceptor {
 
 public:
-    void processPrepareMsg(const string& msg, int FD);
-    void acceptTheSlot(const ProposeMsg& proposeMsg);
-    void sendAcceptMsgToLearner(acceptMsg& myAcceptMsg);
-    void processProposeMsg(const string& msg, int FD);
-    void replyProposeAcceptMsg(int fileDescriptor, ProposeMsg& prepareMsg);
-    void replyProposeRejectMsg(int fileDescriptor, ProposeMsg& prepareMsg);
-    void replyRejectMsg(int fileDescriptor, PrepareMsg& prepareMsg);
-    void replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg);
-    void start();
+    static void processPrepareMsg(const string& msg, int FD);
+    static void acceptTheSlot(const ProposeMsg& proposeMsg);
+    static void sendAcceptMsgToLearner(acceptMsg& myAcceptMsg);
+    static void processProposeMsg(const string& msg, int FD);
+    static void replyProposeAcceptMsg(int fileDescriptor, ProposeMsg& prepareMsg);
+    static void replyProposeRejectMsg(int fileDescriptor, ProposeMsg& prepareMsg);
+    static void replyRejectMsg(int fileDescriptor, PrepareMsg& prepareMsg);
+    static void replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg);
+    static void start();
 };
 

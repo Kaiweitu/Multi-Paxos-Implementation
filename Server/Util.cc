@@ -11,6 +11,7 @@ void sendAndRecvMessage(struct sockaddr_in& addr, string& msg) {
     char buffer[MAXBUFFERSIZE];
     int replySize;
     int sock = sendMessage(addr, msg);
+    _(dCout("start receiving message"));
     recv(sock, &replySize, sizeof(int), MSG_WAITALL); replySize = ntohl(replySize);
     recv(sock, buffer, replySize, MSG_WAITALL);
     msg.assign(buffer, replySize); 
@@ -30,7 +31,8 @@ int sendMessage(struct sockaddr_in &addr, string &msg) {
 }
 
 void sendMessageHelper(int sock, const string& msg) {
-    uint32_t sendSize = htonl(msg.size());
-    send(sock, &sendSize , sizeof(int), 0);
-    send(sock, msg.c_str(), sizeof(msg.c_str()), 0);
+    cout << "Send Message: " << msg << endl;
+    uint32_t sendSize = htonl(msg.size() + 1);
+    cout << send(sock, &sendSize , sizeof(uint32_t), 0) << endl;;
+    cout << send(sock, msg.c_str(), msg.size() + 1, 0) << endl;
 }

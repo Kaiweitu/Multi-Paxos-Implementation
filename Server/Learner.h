@@ -28,9 +28,9 @@ class Learner {
     private:
         static mutex innerMutex;
 
-        static void handleAcceptMessage(learner_data &data, acceptMsg &msg);
-        static void handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg);
-        static void handleSuccessMessage(learner_data &data, successMsg &msg);
+        static void handleAcceptMessage(learner_data &data, acceptMsg msg);
+        static void handleHbMessage(learner_data &data, learnerHeartBeatMsg msg);
+        static void handleSuccessMessage(learner_data &data, successMsg msg);
         static void applyMessage(learner_data &data);
         static void sendHbMessage();
         static bool checkChosen(int slot);

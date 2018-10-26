@@ -36,7 +36,7 @@ void Leader::start() {
                 proposeMsg.serialize(temp);
                 dCout(temp);   
             )
-            
+
             propose(proposeMsg);
         }
         catch (...) { // receive reject
@@ -120,6 +120,7 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
 void Leader::prepareHelper(LeaderPrepareData* data) {
     string message = "";
     makePrepareMessage(data, message);
+    
     sendAndRecvMessage(data->sockAddr, message);
     
     PrepareReply preReply;
@@ -144,21 +145,31 @@ void Leader::prepareHelper(LeaderPrepareData* data) {
 template <class MainClass, class ThreadClass>
 void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), ThreadClass* threadData, unique_lock<mutex>& lck) {
     int majoritySize = Server::addrs.size() / 2 + 1;
+    
+    
+    _(dCout( "finishNum:" + to_string(threadData->finishNum) );)
+    _(dCout( "rejectNum:" + to_string(threadData->rejectNum) );)
+    _(dCout( "majoritySize:" + to_string(majoritySize) );)
+
+
     for (auto& addr : Server::addrs) {
+        _(dCout("Leader: create thread " + to_string(Server::addrs.size()) );)
         MainClass* newData = new MainClass(addr, threadData);
-        thread t(fun_ptr, newData);
+        thread(fun_ptr, newData).detach();
     }
 
+    
     while (threadData->finishNum < majoritySize && !threadData->rejectNum) {
+        
         if (threadData->cv.wait_for(lck, chrono::seconds(TIMEOUTTIME)) == cv_status::timeout) {
             if (threadData->finishNum < majoritySize && !threadData->rejectNum) {
                 threadData->finishNum += 1;
+                _(dCout("Leader: time out!"));
                 return;
             }
         }
     }
 
-    
     // handle different situation
     // if receive reject
     threadData->finishNum += 1;
@@ -177,9 +188,12 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     LeaderPrepareThreadData* threadData = new LeaderPrepareThreadData(unchosenSlot, curViewNum);
     // send message to each server
     unique_lock<mutex> lck(threadData->innerMutex);
+    
+    _(dCout("Leader: unchosenSlot is " + to_string(unchosenSlot));)
 
     connectAllAcceptersAndSendMessage<LeaderPrepareData, LeaderPrepareThreadData> (Leader::prepareHelper, threadData, lck);
-
+    
+    _(dCout("Leader: collect majority results ");)
     // if not
     bool ret = false;
     if (threadData->chosen) ;
@@ -220,7 +234,7 @@ void Leader::proposeHelper(LeaderProposeData* data) {
     string msg;
     data->threadData->proposeMsg.serialize(msg);
     sendAndRecvMessage(data->sockAddr, msg);
-
+    
     ProposeReply pReply; 
     pReply.deserialize(msg);
 
