@@ -33,6 +33,6 @@ int sendMessage(struct sockaddr_in &addr, string &msg) {
 void sendMessageHelper(int sock, const string& msg) {
     cout << "Send Message: " << msg << endl;
     uint32_t sendSize = htonl(msg.size() + 1);
-    cout << send(sock, &sendSize , sizeof(uint32_t), 0) << endl;;
-    cout << send(sock, msg.c_str(), msg.size() + 1, 0) << endl;
+    send(sock, &sendSize , sizeof(uint32_t), 0);
+    send(sock, msg.c_str(), msg.size() + 1, 0);
 }

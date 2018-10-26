@@ -20,7 +20,7 @@ private:
     static void receiveReply();
 
     static const int CLIENT_REQUEST = 3;
-    static const int TIMEOUT_SEC = 5;
+    static const int TIMEOUT_SEC = 10;
 public:
     ClientStub(int client_ID, int port, const string &ip, const string &config);
     int sendMessage(const string &msg);

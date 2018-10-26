@@ -75,6 +75,7 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
             auto it = vote.find(msg_id);
             if (it == vote.end()) {
                 vote[msg_id] = 1;
+                it = vote.find(msg_id);
             } else {
                 it -> second += 1;
             }
