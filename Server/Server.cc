@@ -48,7 +48,7 @@ void Server::start() {
     // timeout.tv_sec = 10;
     // timeout.tv_usec = 0;
 
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
     // setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
     
     if (fd < 0) {
@@ -71,19 +71,23 @@ void Server::start() {
         exit(1);
     }
     
-    if (listen(fd, SOMAXCONN) < 0) {
+    if (listen(fd, 5) < 0) {
         cerr << "ERROR　on listening" << endl;
         exit(1);
     }
     
     thread leader_t(Leader::start);
     thread learner_t(Learner::start);
-    // thread acceptor_t(mAcceptor.start());
+    thread acceptor_t(Acceptor::start);
 
     while (1) {
         // accept message from the client
+        _(dCout("Try to accept message");)
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
-        if (client_fd < 0) continue;
+        if (client_fd < 0) {
+             _(dCout("Accept Fail");)
+            continue;
+        }
         // Read the port adn client ip
         string client_ip(inet_ntoa(cli_addr.sin_addr));
         // unsigned int client_ip = cli_addr.sin_addr.s_addr;
@@ -93,8 +97,9 @@ void Server::start() {
         // Receive the size of the message
         uint32_t size;
         recv(client_fd, &size, sizeof(uint32_t), MSG_WAITALL);
+        
         size = ntohl(size);
-
+        _(dCout("Request size: " + to_string(size));)
         // Receive the message
         unique_ptr<char[]> message_char(new char[size]);
         recv(client_fd, message_char.get(), size, MSG_WAITALL);
@@ -110,15 +115,15 @@ void Server::start() {
         if (message_owner == CLIENT_REQUEST) {
             _(dCout("Push request message to the leader queue: " + message_str + '\n');)
             leaderQue.push(msg);
-            close(fd);
+            close(client_fd);
         } else if (message_owner == ACCEPTOR) {
             // TODO: append file descriptor;
-            _(dCout("Push message to the acceptor queue: " + message_str);)
+            _(dCout("Push message to the acceptor queue: " + msg);)
             acceptorQue.push(msg + ';' + to_string(client_fd));
         } else if (message_owner == LEARNER) {
-            _(dCout("Push message to the learner queue: " + message_str);)
+            _(dCout("Push message to the learner queue: " + msg);)
             learnerQue.push(msg);
-            close(fd);
+            close(client_fd);
         }
     }
 }

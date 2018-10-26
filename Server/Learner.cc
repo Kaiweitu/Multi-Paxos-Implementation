@@ -5,16 +5,15 @@ using namespace std;
 
 mutex Learner::innerMutex;
 learner_data Learner::data;
-Learner::Learner() {
+Learner::Learner() {}
+
+void Learner::start() {
     data.quorum = Server::addrs.size() / 2 + 1;
     data.acceptor_vec.resize(Server::addrs.size());
     _(dCout("[Learner] quorum is " + to_string(data.quorum));)
-}
-
-void Learner::start() {
-    while (1) {
+    while (1) {    
         string message_str = Server::learnerQue.pop();
-        _(dCout("[Leaner] Receive: " + message_str);)
+        _(dCout("[Learner] Receive: " + message_str);)
         stringstream ss(message_str);
         int type;
         ss >> type;
@@ -22,20 +21,21 @@ void Learner::start() {
         string msg_str(message_str.begin() + index + 1, message_str.end());
         if (type == ACCEPT_MESSAGE) {
             acceptMsg msg = acceptMsg::deserialize(msg_str);
-            std::thread t(handleAcceptMessage, std::ref(Learner::data), std::ref(msg));
+            _(dCout("Handle the accept message: " + acceptMsg::serialize(msg));)
+            std::thread(handleAcceptMessage, std::ref(Learner::data), msg).detach();
         } else if (type == HEARTBEAT_MESSAGE) {
             // TODO: Heartbeat Message;
             learnerHeartBeatMsg msg = learnerHeartBeatMsg::deserialize(msg_str);
-            std::thread t(handleHbMessage, std::ref(Learner::data), std::ref(msg));
+            std::thread(handleHbMessage, std::ref(Learner::data), msg).detach();
         }
     }
 }
 
-void Learner::handleAcceptMessage(learner_data &data, acceptMsg &msg) {
+void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
     // Check whether chosen
     unique_lock<mutex> server_lock(Server::innerMutex);
     if (Learner::checkChosen(msg.slot)) return;
-
+    _(dCout("Handle the accept message: " + acceptMsg::serialize(msg));)
     unique_lock<mutex> lock(Learner::innerMutex);
     
     // Add client_addrs into the map if not exist
@@ -45,24 +45,29 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg &msg) {
         client_addr.sin_port = htons(msg.port);
         client_addr.sin_addr.s_addr = msg.client_IP;
         data.client_addrs[msg.client_ID] = client_addr;
+        _(dCout("Client ID:" + to_string(msg.client_ID));) 
+        _(dCout("IP:Port: " + to_string(client_addr.sin_port) + ":" + to_string(client_addr.sin_addr.s_addr));)
     }
 
     // <client_ID, seq> uniquely identify the message
     pair<int, int> command_id = make_pair(msg.client_ID, msg.seq);
 
+    _(dCout("size: " + to_string(data.acceptor_vec.size()));)
     if (msg.slot >= data.acceptor_vec[msg.server_id].size()) {
         data.acceptor_vec[msg.server_id].resize(msg.slot + 1);
     }
 
     slotEntry &slot = data.acceptor_vec[msg.server_id][msg.slot];
-    
+    _(dCout("slot client id:" + to_string(slot.client_ID));)
     if (slot.client_ID == -1 || slot.view_num < msg.view_num) {
         slot.client_ID = msg.client_ID;
         slot.seq = msg.seq;
         slot.view_num = msg.view_num;
         slot.command = msg.command;
+        _(dCout("Put into the slot" + msg.command);)
     }
     // Check whether majority
+    _(dCout("Start voting");)
     map<pair<int, int>, int> vote;
     for (vector<slotEntry> &vec : data.acceptor_vec) {
         if (msg.slot < vec.size() && vec[msg.slot].client_ID != -1) {
@@ -72,23 +77,23 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg &msg) {
                 vote[msg_id] = 1;
             } else {
                 it -> second += 1;
-                if (it -> second >= data.quorum) {
-                    _(dCout("[Leaner] Slot " + to_string(msg.slot) + " chose value: " + vec[msg.slot].command);)
-                    // Update the logs data structure
-                    Server::logs[msg.slot].data = vec[msg.slot].command;
-                    Server::logs[msg.slot].seq = msg.seq;
-                    Server::logs[msg.slot].client_ID = msg.client_ID;
-                    Server::logs[msg.slot].chosen = true;
-                    Server::logs[msg.slot].accepted = true;
-                    // Check whether we can apply the log
-                    Learner::applyMessage(data);
-                }
+            }
+            if (it -> second >= data.quorum) {
+                _(dCout("[Leaner] Slot " + to_string(msg.slot) + " chose value: " + vec[msg.slot].command);)
+                // Update the logs data structure
+                Server::logs[msg.slot].data = vec[msg.slot].command;
+                Server::logs[msg.slot].seq = msg.seq;
+                Server::logs[msg.slot].client_ID = msg.client_ID;
+                Server::logs[msg.slot].chosen = true;
+                Server::logs[msg.slot].accepted = true;
+                // Check whether we can apply the log
+                Learner::applyMessage(data);
             }
         } 
     }
 }
 
-void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg) {
+void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg msg) {
     if (Server::findNextUnchosenLog(0) > msg.first_unchosen_index) {
         successMsg msg_body;
         msg_body.slot = msg.first_unchosen_index;
@@ -110,7 +115,7 @@ void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg &msg) {
     }
 }
 
-void Learner::handleSuccessMessage(learner_data &data, successMsg &msg){
+void Learner::handleSuccessMessage(learner_data &data, successMsg msg){
     unique_lock<mutex> server_lock(Server::innerMutex);
     if (!Learner::checkChosen(msg.slot)) {
         unique_lock<mutex> lock(Learner::innerMutex);

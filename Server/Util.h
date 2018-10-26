@@ -21,7 +21,7 @@ struct PrepareMsg {
     int slot;
     
     void serialize (string& msg) {
-        msg = to_string(ACCEPTOR) + " " + to_string(MESSAGE_PREPARE); + " " + to_string(view) + " " + to_string(slot);
+        msg = to_string(ACCEPTOR) + " " + to_string(MESSAGE_PREPARE) + " " + to_string(view) + " " + to_string(slot);
     };
 
     void deserialize(const string& msg) {
@@ -122,7 +122,8 @@ struct acceptMsg {
 
     static string serialize(acceptMsg &msg) {
         ostringstream oss;
-        oss << LEARNER << ' ' <<  ACCEPT_MESSAGE  <<  ' ' << msg.slot << ' ' << msg.server_id  << ' ' << msg.view_num << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
+        oss << LEARNER << ' ' <<  ACCEPT_MESSAGE  <<  ' ' << msg.slot << ' ' << msg.server_id  << ' ' << msg.view_num 
+        << ' ' << msg.client_IP << ' ' << msg.port << ' ' << msg.seq
         << ' ' << msg.client_ID << ':' << msg.command;
         
         return oss.str();
@@ -134,9 +135,11 @@ struct acceptMsg {
         
         int index = msg_buf.find_first_of(':');
         string cmd(msg_buf.begin() + index + 1, msg_buf.end());
-        msg.command = std::move(cmd);
-        iss >> msg.slot >> msg.server_id >> msg.view_num >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
 
+     
+        iss >> msg.slot >> msg.server_id >> msg.view_num >> msg.client_IP >> msg.port >> msg.seq >> msg.client_ID;
+        msg.command = cmd;
+        cout << "Command is " << msg.command << endl;
         return std::move(msg);
     }
 };

@@ -166,12 +166,15 @@ void Acceptor::replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
 void Acceptor::start() {
     while (true) {
         string message = Server::acceptorQue.pop();
+        _(dCout("Acceptor: receive message " + message );)
         istringstream parser(message);
         int msgType; parser >> msgType;
-        message = message.substr(0, message.find(' '));
+        
+        message = message.substr(message.find(' ') + 1, message.size() - message.find(' ') - 1);
         int FD = atoi(message.substr(message.rfind(';') + 1, message.size() - message.rfind(';') - 1).c_str());
         message = message.substr(0, message.rfind(';'));
         if (msgType == MESSAGE_PREPARE) {
+            cout << message << endl;
             processPrepareMsg(message, FD);
         }
         else if (msgType == MESSAGE_PREPOSE) {

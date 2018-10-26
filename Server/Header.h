@@ -33,4 +33,4 @@
 
 using namespace std;
 
-const unsigned int TIMEOUTTIME = 2;
+const unsigned int TIMEOUTTIME = 50;
