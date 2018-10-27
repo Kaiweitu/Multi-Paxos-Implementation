@@ -13,7 +13,7 @@ struct LogEntry{
     bool chosen;
     bool accepted;
     bool applied;
-    LogEntry(): data(""), viewNum(-1), chosen(false), accepted(false), applied(false) {
+    LogEntry(): data(""), viewNum(-1), chosen(false), accepted(false), applied(false), client_ID(-1), seq(-1) {
         
     }
 };
@@ -41,7 +41,7 @@ public:
 
     void makeEmpty() {
         unique_lock<mutex> lck(innerMutex);
-        while (innerDeque.empty()) innerDeque.pop_front();
+        while (!innerDeque.empty()) innerDeque.pop_front();
     }   
 };
 
@@ -51,7 +51,6 @@ private:
     static int sId;
     static string ip;
     
-    static int skippedSlot;
 
     static mutex innerMutex;
     static vector<LogEntry> logs;
@@ -65,7 +64,7 @@ private:
     static mutex maxViewMutex;
     static int maxViewNum;
     static int skippedSlot;
-
+    
     Leader mLeader;
     Learner mLearner;
     Acceptor mAcceptor;

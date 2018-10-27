@@ -87,7 +87,7 @@ void Acceptor::acceptTheSlot(const ProposeMsg& proposeMsg) {
 void Acceptor::sendAcceptMsgToLearner(acceptMsg& myAcceptMsg) {
      string msg = acceptMsg::serialize(myAcceptMsg);
      for (auto& addr : Server::addrs) 
-         close(sendMessage(addr, msg));
+        close(sendMessage(addr, msg));
 }
 
 void Acceptor::processProposeMsg(const string& msg, int FD) {
@@ -138,13 +138,7 @@ void Acceptor::replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
         assert(!Server::logs.back().chosen);
     }
 
-    if (Server::logs[prepareMsg.slot].chosen) {
-        Server::innerMutex.unlock();
-        prepareReply.AorR = 'C';
-        string msg; prepareReply.serialize(msg); 
-        sendMessageHelper(fileDescriptor, msg);
-    }
-    else if (Server::logs[prepareMsg.slot].accepted){
+    if (Server::logs[prepareMsg.slot].chosen || Server::logs[prepareMsg.slot].accepted){
         prepareReply.oldCommand = Server::logs[prepareMsg.slot].data;
         prepareReply.oldView = Server::logs[prepareMsg.slot].viewNum;
         prepareReply.seq = Server::logs[prepareMsg.slot].seq;
@@ -153,7 +147,10 @@ void Acceptor::replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
         prepareReply.userIP = Server::logs[prepareMsg.slot].userIP;
         Server::innerMutex.unlock();
 
-        prepareReply.AorR = 'A';
+        if (Server::logs[prepareMsg.slot].chosen)
+            prepareReply.AorR = 'C';
+        else
+            prepareReply.AorR = 'A';
         prepareReply.view = prepareMsg.view;
         prepareReply.slot = prepareMsg.slot;
         
@@ -168,7 +165,7 @@ void Acceptor::replyFollowMsg(int fileDescriptor, PrepareMsg& prepareMsg) {
         string msg; prepareReply.serialize(msg);
         sendMessageHelper(fileDescriptor, msg); 
     }
-
+    
     close(fileDescriptor);
 }
 

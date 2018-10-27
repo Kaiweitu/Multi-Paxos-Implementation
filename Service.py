@@ -3,6 +3,7 @@ import os
 import sys
 import hashlib
 import signal
+import time
 
 def sha256sum(filename):
     h = hashlib.sha256()
@@ -23,16 +24,17 @@ def main():
     client_processes = []
     CLIENT_PORT_BASE = 9000
 
-    for idx in range(f_tolerent):
-        command = "./Server/server " + str(idx)
+    for idx in range(replica_num):
+        command = "./Server/server {} {}".format(idx, -1)
         print(command)
         f = open("server_log_%s.txt" % (idx), 'w+')
         pro = subprocess.Popen(command, stdout=f, shell=True, preexec_fn=os.setsid) 
         server_processes.append(pro)
         # os.killpg(os.getpgid(pro.pid), signal.SIGTERM)
     
+    time.sleep(1)
     for idx in range(client_num):
-        command = "./Client/server %s %s"  % (str(idx), str(CLIENT_PORT_BASE + idx))
+        command = "./Client/server %s %s %s"  % (str(idx), 0, str(CLIENT_PORT_BASE + idx))
         print(command)
         f = open("client_log_%s.txt" % (idx), 'w+')
         pro = subprocess.Popen(command, stdout=f, shell=True, preexec_fn=os.setsid) 
@@ -61,8 +63,8 @@ def main():
                     os.killpg(os.getpgid(client_processes[id].pid), signal.SIGTERM)
                     client_processes[id] = -1
         elif cmd[0] == 'hash':
-            for idx in range(f_tolerent):
-                filename = "server_log_%s.txt" % (idx)
+            for idx in range(replica_num):
+                filename = "data%s.txt" % (idx)
                 print("Hash value for replica %s is %s" % (idx, sha256sum(filename)))
         elif cmd[0] == 'exit':
             killAll(server_processes)                    
@@ -71,7 +73,7 @@ def main():
 
 def killAll(process):
     for pros in process:
-        if pros != -1:
+        if pros != -1 and pros.poll() == None:
             os.killpg(os.getpgid(pros.pid), signal.SIGTERM)
     process = []
     

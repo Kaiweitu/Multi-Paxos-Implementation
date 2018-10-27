@@ -20,6 +20,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <random>
+#include <ctime>
 
 
 #include "Util.h"
@@ -29,8 +31,10 @@
 #include "Server.h"
 
 
-#define _(x) x
+#define _(x)
 
 using namespace std;
 
-const unsigned int TIMEOUTTIME = 5;
+const unsigned int TIMEOUTTIME = 2;
+
+

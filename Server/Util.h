@@ -16,6 +16,8 @@ const int ACCEPT_MESSAGE = 0;
 const int HEARTBEAT_MESSAGE = 1;
 const int SUCCESS_MESSAGE = 2;
 
+static int LOSS_RATE = 0;
+
 struct PrepareMsg {
     int view;
     int slot;

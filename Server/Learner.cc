@@ -13,7 +13,7 @@ void Learner::start() {
     _(dCout("[Learner] quorum is " + to_string(data.quorum));)
     _(dCout("[Learner] clean files");)
     remove( ("data" + to_string(Server::sId) + ".txt").c_str() );
-
+    thread(sendHbMessage).detach();
     while (1) {    
         string message_str = Server::learnerQue.pop();
         _(dCout("[Learner] Receive: " + message_str);)
@@ -29,6 +29,9 @@ void Learner::start() {
             // TODO: Heartbeat Message;
             learnerHeartBeatMsg msg = learnerHeartBeatMsg::deserialize(msg_str);
             std::thread(handleHbMessage, std::ref(Learner::data), msg).detach();
+        } else if (type == SUCCESS_MESSAGE) {
+            successMsg msg = successMsg::deserialize(msg_str);
+            std::thread(handleSuccessMessage, std::ref(data), msg).detach();
         }
     }
 }
@@ -41,6 +44,7 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
     unique_lock<mutex> lock(Learner::innerMutex);
     
     // Add client_addrs into the map if not exist
+    /*
     if (data.client_addrs.find(msg.client_ID) == data.client_addrs.end()) {
         struct sockaddr_in client_addr;
         client_addr.sin_family = AF_INET;
@@ -49,7 +53,7 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
         data.client_addrs[msg.client_ID] = client_addr;
         _(dCout("Client ID:" + to_string(msg.client_ID));) 
         _(dCout("IP:Port: " + to_string(client_addr.sin_port) + ":" + to_string(client_addr.sin_addr.s_addr));)
-    }
+    }*/
 
     // <client_ID, seq> uniquely identify the message
     pair<int, int> command_id = make_pair(msg.client_ID, msg.seq);
@@ -88,6 +92,8 @@ void Learner::handleAcceptMessage(learner_data &data, acceptMsg msg) {
                 Server::logs[msg.slot].data = vec[msg.slot].command;
                 Server::logs[msg.slot].seq = msg.seq;
                 Server::logs[msg.slot].client_ID = msg.client_ID;
+                Server::logs[msg.slot].port = msg.port;
+                Server::logs[msg.slot].userIP = msg.client_IP;
                 Server::logs[msg.slot].chosen = true;
                 Server::logs[msg.slot].accepted = true;
                 // Check whether we can apply the log
@@ -107,44 +113,53 @@ void Learner::handleHbMessage(learner_data &data, learnerHeartBeatMsg msg) {
         msg_body.command = entry.data;
         msg_body.seq = entry.seq;
         msg_body.client_ID = entry.client_ID;
+        msg_body.port = entry.port;
+        msg_body.client_IP = entry.userIP;
         server_lock.unlock();
         
-        unique_lock<mutex> lock(Learner::innerMutex);
-        msg_body.port = data.client_addrs[msg_body.client_ID].sin_port;
-        msg_body.client_IP = data.client_addrs[msg_body.client_ID].sin_addr.s_addr;
-        lock.unlock(); 
         ostringstream oss;
         oss << LEARNER << ' ' << SUCCESS_MESSAGE << ' ' << successMsg::serialize(msg_body); 
         string msg_str = oss.str();
-        sendMessage(Server::addrs[msg.server_id], msg_str);
+        close(sendMessage(Server::addrs[msg.server_id], msg_str));
     }
 }
 
 void Learner::handleSuccessMessage(learner_data &data, successMsg msg){
     unique_lock<mutex> server_lock(Server::innerMutex);
-    if (!Learner::checkChosen(msg.slot)) {
-        unique_lock<mutex> lock(Learner::innerMutex);
+    
+    if (!Learner::checkChosen(msg.slot)){
+        Learner::checkChosen(msg.slot);
         LogEntry &entry = Server::logs[msg.slot];
         entry.data = msg.command;
         entry.seq = msg.seq;
         entry.client_ID = msg.client_ID;
         entry.accepted = true;
         entry.chosen = true;
+        entry.userIP = msg.client_IP;
+        entry.port = msg.port;
+        _(dCout("Slot " + to_string(msg.slot) + " Change to " + msg.command);
+        )
         auto it = data.client_addrs.find(entry.client_ID);
         if (it == data.client_addrs.end()) {
             // Question here : same client_ID different address
             struct sockaddr_in client_addr;
             client_addr.sin_family = AF_INET;
             client_addr.sin_port = htons(msg.port);
-            client_addr.sin_addr.s_addr = msg.client_IP;
+            client_addr.sin_addr.s_addr 
+            = msg.client_IP;
             data.client_addrs[entry.client_ID] = client_addr;
         }
         // hold two locks;
+        unique_lock<mutex> lock(Learner::innerMutex);
         Learner::applyMessage(data);
     } else {
         const LogEntry &entry = Server::logs[msg.slot];
         if (entry.client_ID != msg.client_ID || entry.seq != msg.seq){
-            throw runtime_error("Inconsistency happen");
+            _(  dCout( "current command" + entry.data);
+                dCout( to_string(Server::sId) + " Inconsistency happen client_ID " +
+                to_string(msg.client_ID) + " msg seq " + to_string(msg.seq));
+                exit(1);
+            )
         }
     }
 }
@@ -171,11 +186,11 @@ void Learner::sendHbMessage() {
                 ostringstream oss;
                 oss << LEARNER << ' ' << HEARTBEAT_MESSAGE << ' ' << learnerHeartBeatMsg::serialize(msg_body); 
                 string msg = oss.str();
-                sendMessage(Server::addrs[idx], msg);
+                close(sendMessage(Server::addrs[idx], msg));
             }
         }
         // Every 300 ms sending the message
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
 
@@ -184,9 +199,9 @@ void Learner::applyMessage(learner_data &data) {
     while (data.next_apply < Server::logs.size() && Server::logs[data.next_apply].chosen) {
         LogEntry &entry = Server::logs[data.next_apply]; 
         auto it = data.client_last_apply.find(entry.client_ID);
-        if (it != data.client_last_apply.end() && it -> second >= entry.seq) {
+        if (it != data.client_last_apply.end() && it -> second >= entry.seq && entry.data != "") {
             data.next_apply ++;
-            _(dCout("Client " + to_string(entry.client_ID) + " has duplicat message with seq: " + to_string(entry.seq));)
+            _(dCout("Client " + to_string(entry.client_ID) + " has duplicate message with seq: " + to_string(entry.seq));)
             continue;
         } else {
             data.client_last_apply[entry.client_ID] = entry.seq;
@@ -205,7 +220,11 @@ void Learner::applyMessage(learner_data &data) {
                             to_string(entry.client_ID);
         // server_lock.unlock();
         // Send reponse to the client
-        sendMessage(data.client_addrs[Server::logs[data.next_apply].client_ID], reply_msg);
+        struct sockaddr_in client_addr;
+        client_addr.sin_family = AF_INET;
+        client_addr.sin_port = htons(entry.port);
+        client_addr.sin_addr.s_addr = entry.userIP;
+        close(sendMessage(client_addr, reply_msg));
         // server_lock.lock();
         data.next_apply ++;
     }

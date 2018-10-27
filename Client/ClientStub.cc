@@ -9,10 +9,10 @@ ClientStub::impl_t ClientStub::impl;
 const int ClientStub::CLIENT_REQUEST;
 const int ClientStub::TIMEOUT_SEC;
 
-ClientStub::ClientStub(int _client_ID, int _port, const string &ip, const string &config) {
+ClientStub::ClientStub(int _client_ID, int _seq, int _port, const string &ip, const string &config) {
     impl.client_ID = _client_ID;
     impl.port = _port;
-    impl.seq = 0;
+    impl.seq = _seq;
     impl.current_sId = 0;
     struct sockaddr_in client_addr;
     inet_pton(AF_INET, ip.c_str(), &(client_addr.sin_addr));
@@ -27,7 +27,8 @@ ClientStub::ClientStub(int _client_ID, int _port, const string &ip, const string
         string s_ip;
         int port;
         int id;
-        ifs >> id >> s_ip >> port;
+        int nonsense;
+        ifs >> id >> s_ip >> port >> nonsense;
 
         struct sockaddr_in serv_addr;
         struct hostent *server;
@@ -110,6 +111,7 @@ void ClientStub::receiveReply() {
         exit(1);
     }
     
+    int message_num = 0;
     while (1) {
         // accept message from the client
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
@@ -133,6 +135,6 @@ void ClientStub::receiveReply() {
             impl.reply = true;
             cv.notify_one();
         }
-        //close(client_fd);
+        close(client_fd);
     }
 }

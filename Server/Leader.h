@@ -31,7 +31,7 @@ struct LeaderPrepareData{
 };
 
 struct LeaderProposeThreadData {
-    ProposeMsg& proposeMsg;
+    ProposeMsg proposeMsg;
     int rejectNum;
     int finishNum;
     int acceptNum;

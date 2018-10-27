@@ -8,7 +8,6 @@ int Server::sId;
 int Server::maxViewNum;
 int Server::skippedSlot;
 
-int Server::skipedSlot;
 
 string Server::ip;
 
@@ -24,10 +23,16 @@ mutex Server::maxViewMutex;
 
 int Server::findNextUnchosenLog(int curIndex) {
     unique_lock<mutex> iMutex(Server::innerMutex);
+    
+    while (curIndex >= Server::logs.size()) {
+        Server::logs.push_back(LogEntry());
+    }
+    
     for (size_t i = curIndex; i < Server::logs.size(); ++ i)
         if (!Server::logs[i].chosen) return i;
-
+    
     Server::logs.push_back(LogEntry());
+
     return Server::logs.size() - 1;
 }
 
@@ -88,7 +93,13 @@ void Server::start() {
         _(dCout("Try to accept message");)
         int client_fd = accept(fd, (struct sockaddr *) &cli_addr, &cli_len);
         if (client_fd < 0) {
-             _(dCout("Accept Fail");)
+
+             char buffer[256];
+             char *errorMessage = strerror_r(errno, buffer, 256);
+             _(
+                string msg(buffer);
+                dCout("Accept Fail: " + msg);
+                )
             continue;
         }
         // Read the port adn client ip

@@ -24,7 +24,7 @@ void Leader::start() {
 
             curIndex = Server::findNextUnchosenLog(curIndex);    
             while (curIndex == Server::skippedSlot || !prepare(curIndex, curViewNum)) 
-                curIndex = Server::findNextUnchosenLog(curIndex);
+                curIndex = Server::findNextUnchosenLog(curIndex + 1);
             
             _(dCout("Leader: Start to propose msg");)
             ProposeMsg proposeMsg(curViewNum, curIndex, userIP, port, seq, cid, sentence);
@@ -49,7 +49,7 @@ void Leader::start() {
 
 int Leader::calculateViewNum() {
     Server::maxViewMutex.lock();
-    int baseNum = Server::maxViewNum / Server::addrs.size() * Server::addrs.size();
+    int baseNum = (Server::maxViewNum + 1) / Server::addrs.size() * Server::addrs.size();
     Server::maxViewMutex.unlock();
     return baseNum + Server::sId;
 }
@@ -93,20 +93,26 @@ void Leader::processReplyMessage(const PrepareReply& preReply, LeaderPrepareData
         data->threadData->cv.notify_one();
         return;
     } 
-
-    if (preReply.AorR == 'A') {
-        // the acceptor slot is not empty;
-        if (data->threadData->maxView < preReply.oldView) { 
-            data->threadData->maxView = preReply.oldView;
-            data->threadData->messageToPropose = preReply.oldCommand;
-            data->threadData->userIP = preReply.userIP;
-            data->threadData->port = preReply.port;
-            data->threadData->seq = preReply.seq;
-            data->threadData->CID = preReply.CID;
-        }
+    
+    
+    if (data->threadData->maxView < preReply.oldView) { 
+        data->threadData->maxView = preReply.oldView;
+        data->threadData->messageToPropose = preReply.oldCommand;
+        data->threadData->userIP = preReply.userIP;
+        data->threadData->port = preReply.port;
+        data->threadData->seq = preReply.seq;
+        data->threadData->CID = preReply.CID;
     }
-    else if (preReply.AorR == 'C') 
+    else if (preReply.AorR == 'C') {
         data->threadData->chosen = true;
+        data->threadData->maxView = preReply.oldView;
+        data->threadData->messageToPropose = preReply.oldCommand;
+        data->threadData->userIP = preReply.userIP;
+        data->threadData->port = preReply.port;
+        data->threadData->seq = preReply.seq;
+        data->threadData->CID = preReply.CID;
+    
+    }
     
 
     
@@ -174,6 +180,7 @@ void Leader::connectAllAcceptersAndSendMessage(void (*fun_ptr)(MainClass*), Thre
             if (threadData->acceptNum < majoritySize && !threadData->rejectNum) {
                 threadData->finishNum += 1;
                 _(dCout("Leader: time out!"));
+                throw runtime_error("receive reject");
                 return;
             }
         }
@@ -206,7 +213,17 @@ bool Leader::prepare(int unchosenSlot, int curViewNum) {
     // if not
     bool ret = false;
     if (threadData->chosen) {
-        _(dCout("Leader: the value has been chosen!");)
+        Server::innerMutex.lock();
+        Server::logs[unchosenSlot].applied = false;
+        Server::logs[unchosenSlot].accepted = true;
+        Server::logs[unchosenSlot].chosen = true;
+        Server::logs[unchosenSlot].data = threadData->messageToPropose;
+        Server::logs[unchosenSlot].client_ID = threadData->CID;
+        Server::logs[unchosenSlot].seq = threadData->seq;
+        Server::logs[unchosenSlot].userIP = threadData->userIP;
+        Server::logs[unchosenSlot].port = threadData->port;
+        Server::innerMutex.unlock();
+        _(dCout("Leader: Slot " + to_string(unchosenSlot) + " " + threadData->messageToPropose);)
     }
     else if (threadData->maxView != -1) {  // need to propose the old value
         ProposeMsg proposeMsg(curViewNum, unchosenSlot, threadData->userIP, threadData->port, 

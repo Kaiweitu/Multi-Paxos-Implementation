@@ -2,6 +2,8 @@
 using namespace std;
 
 int main(int argc, char **argv) {
+    srand(time(0));
+    //ios_base::sync_with_stdio(false);
     if (argc != 3) {
         exit(1);
     } 
@@ -22,7 +24,9 @@ int main(int argc, char **argv) {
         string s_ip;
         int port;
         int id;
-        ifs >> id >> s_ip >> port;
+        int nonsense;
+        ifs >> id >> s_ip >> port >> nonsense;
+        if (i == sId) LOSS_RATE = nonsense;
         hosts[id] = s_ip;
         ports[id] = port;
     }
