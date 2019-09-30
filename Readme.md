@@ -1,5 +1,5 @@
 ### Multi-Paxos implementation in C++
-
+Co-author: Fanzhong Kong
 #### Abstract
 Multi-paxos in pure c++ is very simple.
 
