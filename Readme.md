@@ -1,4 +1,4 @@
-### EECS 591 Multi-Paxos
+### Multi-Paxos implementation in C++
 
 #### Abstract
 Multi-paxos in pure c++ is very simple.

@@ -6,3 +6,4 @@ Server/server
 *.config
 Server/*.txt
 Client/*.txt
+.DS_Store
