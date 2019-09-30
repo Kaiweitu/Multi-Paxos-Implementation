@@ -1,5 +1,6 @@
 ### Multi-Paxos implementation in C++
 Co-author: Fanzhong Kong
+
 #### Abstract
 Multi-paxos in pure c++ is very simple.
 
@@ -31,3 +32,5 @@ Other paremeters are edited in the file `service.config` and `replica.config`. *
 
 The `Service.py` supports many operations. Refer to it code for more details.
 
+NOTE:
+Using this code for any course purpose will violate the Honor Code in University of Michigan.
